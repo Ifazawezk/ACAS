@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>ACAS Login - Advanced Comment Analysis System</title>
+    
+    <!-- PWA & App Meta Tags -->
+    <meta name="theme-color" content="#1F77C2">
+    <meta name="description" content="Enterprise-Grade AI-Powered Customer Feedback Intelligence Platform">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ACAS">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="/frontend/icons/icon-192x192.png">
+    <link rel="manifest" href="/frontend/manifest.json">
+    
+    <!-- iOS Splash Screen Icons -->
+    <link rel="apple-touch-startup-image" href="/frontend/icons/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/frontend/icons/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/frontend/icons/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
+    <style>
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0b0b0b 0%, #1a0f0f 100%);
+            color: #f8f8f8;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.5;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            perspective: 1000px;
+        }
+
+        .login-card {
+            background: rgba(26, 15, 15, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: #dc2626;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #f8f8f8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #f8f8f8;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #dc2626;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .form-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 16px;
+        }
+
+        .form-tab {
+            flex: 1;
+            padding: 8px 12px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .form-tab.active {
+            color: #dc2626;
+            border-bottom-color: #dc2626;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .role-option {
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .role-option:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .role-option.selected {
+            border-color: #dc2626;
+            background: rgba(220, 38, 38, 0.15);
+            color: #dc2626;
+        }
+
+        .role-option input {
+            display: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #dc2626, #f87171);
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert.error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .alert.success {
+            background: rgba(16, 185, 129, 0.15);
+            color: #86efac;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #a0a0a0;
+            font-size: 13px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(220, 38, 38, 0.3);
+            border-top-color: #dc2626;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 12px;
+            color: #686868;
+        }
+
+        .version {
+            display: inline-block;
+            margin: 0 8px;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 24px;
+                border-radius: 12px;
+            }
+
+            .logo {
+                font-size: 24px;
+            }
+
+            .role-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-section">
+                <div class="logo">◈ ACAS</div>
+                <div class="subtitle">Advanced Comment Analysis</div>
+            </div>
+
+            <div id="alert" class="alert"></div>
+
+            <div class="form-tabs">
+                <button class="form-tab active" data-tab="login">Login</button>
+                <button class="form-tab" data-tab="register">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="form-section active" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" name="username" placeholder="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" name="password" placeholder="Your password" required>
+                </div>
+
+                <button type="submit" class="btn">
+                    <span id="login-btn-text">Sign In</span>
+                    <span id="login-spinner" class="spinner" style="display: none;"></span>
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="form-section" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" name="username" placeholder="your_username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="register-email">Email (Optional)</label>
+                    <input type="email" id="register-email" name="email" placeholder="your@email.com">
+                </div>
+
+                <div class="form-group">
+                    <label>Role</label>
+                    <div class="role-grid">
+                        <label class="role-option">
+                            <input type="radio" name="role" value="user" checked>
+                            <span>👤 User</span>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="role" value="manager">
+                            <span>👔 Manager</span>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="role" value="admin">
+                            <span>👨‍💼 Admin</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" name="password" placeholder="At least 6 characters" required>
+                </div>
+
+                <button type="submit" class="btn">
+                    <span id="register-btn-text">Create Account</span>
+                    <span id="register-spinner" class="spinner" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div class="footer">
+                <span class="version">v1.0</span>
+                <span>©2026 ACAS Intelligence</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+        let state = {
+            isLoading: false
+        };
+
+        // Tab switching
+        document.querySelectorAll('.form-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll('.form-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`${tabName}-form`).classList.add('active');
+                clearAlert();
+            });
+        });
+
+        // Role selection
+        document.querySelectorAll('.role-option input').forEach(input => {
+            input.addEventListener('change', function() {
+                document.querySelectorAll('.role-option').forEach(opt => opt.classList.remove('selected'));
+                this.parentElement.classList.add('selected');
+            });
+        });
+        document.querySelector('.role-option').classList.add('selected');
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            if (state.isLoading) return;
+
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!username || !password) {
+                showAlert('Please enter username and password', 'error');
+                return;
+            }
+
+            state.isLoading = true;
+            document.getElementById('login-btn-text').style.display = 'none';
+            document.getElementById('login-spinner').style.display = 'inline-block';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Login failed');
+                }
+
+                // Save token and user info
+                localStorage.setItem('auth_token', data.access_token);
+                localStorage.setItem('user_id', data.user_id);
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('role', data.role);
+
+                showAlert(`Welcome ${data.username}!`, 'success');
+                setTimeout(() => {
+                    window.location.href = '/frontend/static_index.html';
+                }, 500);
+            } catch (error) {
+                showAlert(error.message, 'error');
+            } finally {
+                state.isLoading = false;
+                document.getElementById('login-btn-text').style.display = 'inline';
+                document.getElementById('login-spinner').style.display = 'none';
+            }
+        }
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            if (state.isLoading) return;
+
+            const username = document.getElementById('register-username').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+            const role = document.querySelector('input[name="role"]:checked').value;
+
+            if (!username || !password || password.length < 6) {
+                showAlert('Username and password (min 6 chars) are required', 'error');
+                return;
+            }
+
+            state.isLoading = true;
+            document.getElementById('register-btn-text').style.display = 'none';
+            document.getElementById('register-spinner').style.display = 'inline-block';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username,
+                        email: email || null,
+                        password,
+                        role
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Registration failed');
+                }
+
+                // Save token and user info
+                localStorage.setItem('auth_token', data.access_token);
+                localStorage.setItem('user_id', data.user_id);
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('role', data.role);
+
+                showAlert(`Account created! Welcome ${data.username}!`, 'success');
+                setTimeout(() => {
+                    window.location.href = '/frontend/static_index.html';
+                }, 500);
+            } catch (error) {
+                showAlert(error.message, 'error');
+            } finally {
+                state.isLoading = false;
+                document.getElementById('register-btn-text').style.display = 'inline';
+                document.getElementById('register-spinner').style.display = 'none';
+            }
+        }
+
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert ${type} show`;
+        }
+
+        function clearAlert() {
+            const alert = document.getElementById('alert');
+            alert.className = 'alert';
+        }
+
+        // Check if already logged in
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                window.location.href = '/frontend/static_index.html';
+            }
+        });
+    </script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker
+                    .register('/frontend/service-worker.js')
+                    .then((registration) => {
+                        console.log('[PWA] Service Worker registered successfully:', registration);
+                        
+                        // Check for updates periodically (every hour)
+                        setInterval(() => {
+                            registration.update();
+                        }, 1000 * 60 * 60);
+                    })
+                    .catch((error) => {
+                        console.error('[PWA] Service Worker registration failed:', error);
+                    });
+            });
+        } else {
+            console.warn('[PWA] Service Workers not supported in this browser');
+        }
+
+        // Handle iOS App Banner
+        window.addEventListener('beforeinstallprompt', (event) => {
+            console.log('[PWA] App install prompt triggered');
+            // Store the prompt for later use
+            window.deferredInstallPrompt = event;
+            
+            // Optional: Show custom install button
+            const installBtn = document.getElementById('install-btn');
+            if (installBtn) {
+                installBtn.style.display = 'block';
+            }
+        });
+
+        // Add iOS installation instructions
+        function showIOSInstallInstructions() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            if (isIOS) {
+                alert(
+                    'To install ACAS on your iPad:\n\n' +
+                    '1. Tap the Share button (↑)\n' +
+                    '2. Scroll down and tap "Add to Home Screen"\n' +
+                    '3. Tap "Add" to confirm\n\n' +
+                    'ACAS will now appear as an app on your home screen!'
+                );
+            }
+        }
+
+        // Detect if app is running in standalone mode
+        if (window.navigator.standalone === true) {
+            console.log('[PWA] App running in standalone mode');
+            document.body.classList.add('standalone');
+        }
+
+        // Listen for app events
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('[PWA] App moved to background');
+            } else {
+                console.log('[PWA] App moved to foreground');
+            }
+        });
+    </script>
+</body>
+</html>

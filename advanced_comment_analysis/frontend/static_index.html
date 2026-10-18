@@ -1,0 +1,2576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>ACAS Dashboard - Advanced Comment Analysis System</title>
+    
+    <!-- PWA & App Meta Tags -->
+    <meta name="theme-color" content="#1F77C2">
+    <meta name="description" content="Enterprise-Grade AI-Powered Customer Feedback Intelligence Platform">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ACAS">
+    <link rel="apple-touch-icon" href="/frontend/icons/icon-192x192.png">
+    <link rel="manifest" href="/frontend/manifest.json">
+    
+    <!-- iOS Splash Screen Icons -->
+    <link rel="apple-touch-startup-image" href="/frontend/icons/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/frontend/icons/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/frontend/icons/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
+    
+    <style>
+        :root {
+            --bg: #0b0b0b;
+            --panel: #1a0f0f;
+            --muted: #f3c6c6;
+            --text: #f8f8f8;
+            --accent: #dc2626;
+            --border: rgba(255,255,255,0.03);
+            --hover: rgba(255,255,255,0.02);
+        }
+        .light {
+            --bg: #ffffff;
+            --panel: #fff7f7;
+            --muted: #6b7280;
+            --text: #0f172a;
+            --accent: #dc2626;
+            --border: rgba(0,0,0,0.06);
+            --hover: rgba(0,0,0,0.02);
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+        .wrapper { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+        .logo { font-weight: 800; color: var(--accent); font-size: 24px; letter-spacing: -0.5px; }
+        .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; }
+        .controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .btn:hover { background: var(--hover); border-color: rgba(220,38,38,0.2); }
+        .btn.primary { background: linear-gradient(135deg, var(--accent), #f87171); color: white; border: none; }
+        .btn.primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(220,38,38,0.3); }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 240px;
+            height: 100vh;
+            background: linear-gradient(180deg, rgba(26,15,15,0.95), rgba(26,15,15,0.98));
+            border-right: 1px solid var(--border);
+            padding: 24px 0;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 0 16px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sidebar-title { font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.5px; }
+        .tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 0;
+        }
+        .tab {
+            padding: 14px 16px;
+            cursor: pointer;
+            color: var(--muted);
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+            background: transparent;
+            border: none;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .tab:hover { background: var(--hover); color: var(--text); }
+        .tab.active {
+            background: linear-gradient(90deg, rgba(220,38,38,0.15), transparent);
+            color: var(--accent);
+            border-left-color: var(--accent);
+        }
+        .content {
+            margin-left: 240px;
+            padding-bottom: 40px;
+            transition: margin-left 0.3s ease;
+        }
+        .sidebar.collapsed ~ .content { margin-left: 0; }
+        .sidebar.collapsed { width: 0; padding: 0; overflow: hidden; }
+        #btn-toggle-sidebar { display: none; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .card {
+            background: var(--panel);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+        .card:hover { border-color: rgba(220,38,38,0.2); box-shadow: 0 10px 30px rgba(220,38,38,0.05); }
+        .card h3 { margin: 0 0 12px; font-size: 18px; font-weight: 700; }
+        .card h4 { margin: 12px 0 8px; font-size: 14px; font-weight: 600; color: var(--accent); }
+        .card p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+        
+        .grid { display: grid; gap: 16px; margin-bottom: 20px; }
+        .grid-cols-1 { grid-template-columns: 1fr; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+        @media (max-width: 1200px) {
+            .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+            .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .sidebar { position: static; width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 12px 0; }
+            .content { margin-left: 0; }
+            .tabs { flex-direction: row; overflow-x: auto; padding: 0 8px; }
+            .tab { border-left: none; border-bottom: 3px solid transparent; }
+            .tab.active { border-bottom-color: var(--accent); }
+        }
+
+        .kpi-tile {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            position: relative;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .kpi-tile:hover { border-color: rgba(220,38,38,0.3); box-shadow: 0 12px 30px rgba(220,38,38,0.1); transform: translateY(-2px); }
+        .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .kpi-icon { font-size: 28px; opacity: 0.7; }
+        .kpi-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .kpi-value { font-size: 28px; font-weight: 800; color: var(--text); margin: 4px 0; letter-spacing: -1px; }
+        .kpi-unit { font-size: 14px; font-weight: 600; margin-left: 4px; color: var(--muted); }
+        .kpi-trend { font-size: 12px; font-weight: 600; margin-top: 8px; padding: 6px 10px; border-radius: 6px; display: inline-block; width: fit-content; }
+        .kpi-trend.positive { background: rgba(16,185,129,0.15); color: #10b981; }
+        .kpi-trend.negative { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .kpi-trend.neutral { background: rgba(107,114,128,0.15); color: #9ca3af; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--hover);
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--panel);
+            box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+        }
+        textarea { resize: vertical; min-height: 100px; }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(11,11,11,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(11,11,11,0.5);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .modal-header h2 { margin: 0; font-size: 20px; }
+        .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 20px; }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        .table thead tr {
+            border-bottom: 2px solid var(--border);
+        }
+        .table th {
+            text-align: left;
+            padding: 12px 8px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        .table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+        .table tr:hover { background: var(--hover); }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-critical { background: #7f1d1d; color: #fecaca; }
+        .badge-high { background: #7c2d12; color: #fed7aa; }
+        .badge-medium { background: #78350f; color: #fef08a; }
+        .badge-low { background: #064e3b; color: #a7f3d0; }
+        .badge-open { background: #1e3a8a; color: #bfdbfe; }
+        .badge-in_progress { background: #6b21a8; color: #e9d5ff; }
+        .badge-closed { background: #064e3b; color: #a7f3d0; }
+
+        .chart-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        svg { display: block; margin: 0 auto; }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--hover);
+            margin-bottom: 8px;
+            gap: 12px;
+        }
+        .list-item-title { font-weight: 600; }
+        .list-item-meta { font-size: 12px; color: var(--muted); }
+        .list-item-actions { display: flex; gap: 6px; }
+
+        .stats-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .stat {
+            flex: 1;
+            padding: 12px;
+            background: var(--hover);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+        }
+        .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+        .stat-value { font-size: 20px; font-weight: 800; margin-top: 4px; }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--hover);
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+        .status-dot.error { background: #ef4444; }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        .btn { flex: 1; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--muted);
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        [dir="rtl"] { direction: rtl; }
+        [dir="rtl"] .tab { text-align: right; border-left: none; border-right: 3px solid transparent; }
+        [dir="rtl"] .tab.active { border-right-color: var(--accent); }
+        [dir="rtl"] .sidebar { border-right: none; border-left: 1px solid var(--border); }
+        [dir="rtl"] .content { margin-left: 0; margin-right: 240px; transition: margin-right 0.3s ease; }
+        [dir="rtl"] .sidebar.collapsed ~ .content { margin-right: 0; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            [dir="rtl"] .sidebar { border-left: none; border-bottom: 1px solid var(--border); }
+            [dir="rtl"] .content { margin-right: 0; }
+            #btn-toggle-sidebar { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">DASHBOARD</div>
+        </div>
+        <div class="tabs" id="sidebar-tabs"></div>
+        <div style="padding: 0 16px; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span id="status-text">System Online</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="wrapper">
+            <header>
+                <div>
+                    <div class="logo">◈ ACAS</div>
+                    <div class="subtitle">Advanced Comment Analysis System</div>
+                </div>
+                <div class="controls">
+                    <button id="btn-toggle-sidebar" class="btn" style="display: none; padding: 6px 10px; font-size: 14px;">☰</button>
+                    <div id="user-profile" style="display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: var(--hover); border-radius: 8px;">
+                        <div style="text-align: right;">
+                            <div id="current-username" style="font-weight: 600; font-size: 13px;">User</div>
+                            <div id="current-role" style="font-size: 11px; color: var(--muted); text-transform: capitalize;">user</div>
+                        </div>
+                        <button id="btn-logout" class="btn" style="padding: 6px 12px; font-size: 12px; width: auto;" data-i18n="common.logout">Logout</button>
+                    </div>
+                    <select id="language-select" class="btn">
+                        <option value="en">English</option>
+                        <option value="ar">العربية</option>
+                    </select>
+                    <button id="theme-toggle" class="btn">🌙</button>
+                    <div id="api-status" style="font-size: 12px; color: #10b981;">● API</div>
+                </div>
+            </header>
+
+            <!-- Live Dashboard Tab -->
+            <div id="tab-live" class="tab-panel active">
+                <div class="grid grid-cols-4">
+                    <div class="kpi-tile">
+                        <div class="kpi-header">
+                            <div>
+                                <div class="kpi-label">Analyzed (24h)</div>
+                                <div class="kpi-value"><span id="kpi-total">250</span></div>
+                            </div>
+                            <div class="kpi-icon">💬</div>
+                        </div>
+                        <div class="kpi-trend positive">▲ +12%</div>
+                    </div>
+                    <div class="kpi-tile">
+                        <div class="kpi-header">
+                            <div>
+                                <div class="kpi-label">Crisis Alerts</div>
+                                <div class="kpi-value"><span id="kpi-attention">60</span></div>
+                            </div>
+                            <div class="kpi-icon">🚨</div>
+                        </div>
+                        <div class="kpi-trend negative">▼ -5</div>
+                    </div>
+                    <div class="kpi-tile">
+                        <div class="kpi-header">
+                            <div>
+                                <div class="kpi-label">Avg. Confidence</div>
+                                <div class="kpi-value"><span id="kpi-confidence">82</span><span class="kpi-unit">%</span></div>
+                            </div>
+                            <div class="kpi-icon">✨</div>
+                        </div>
+                        <div class="kpi-trend positive">▲ +0.8%</div>
+                    </div>
+                    <div class="kpi-tile">
+                        <div class="kpi-header">
+                            <div>
+                                <div class="kpi-label">Noise Filtered</div>
+                                <div class="kpi-value"><span id="kpi-resolved">24</span><span class="kpi-unit">%</span></div>
+                            </div>
+                            <div class="kpi-icon">✓</div>
+                        </div>
+                        <div class="kpi-trend positive">▲ +2.1%</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2" style="margin-top: 24px;">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <div>
+                                <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 4px 0;">⚡ Multiclass Emotion Detection</h3>
+                                <p style="font-size: 12px; color: var(--muted); margin: 0;">Sentiment analysis</p>
+                            </div>
+                            <button class="btn" style="font-size: 12px; padding: 6px 12px;">View Matrix</button>
+                        </div>
+                        <div id="sentiment-chart" class="chart-container">
+                            <svg width="100%" height="240" viewBox="0 0 400 240" id="sentiment-svg"></svg>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <div>
+                                <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 4px 0;">🤖 Smart Auto-Routing</h3>
+                                <p style="font-size: 12px; color: var(--muted); margin: 0;">Distribution by category</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 24px;">
+                            <div id="routing-donut" style="flex: 1; display: flex; justify-content: center; align-items: center; min-height: 200px;">
+                                <svg width="140" height="140" viewBox="0 0 140 140" id="routing-svg"></svg>
+                            </div>
+                            <div id="routing-legend" style="flex: 1; font-size: 13px; line-height: 1.8;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2">
+                    <div class="card">
+                        <h3>Comments Timeline</h3>
+                        <p>Last 24 hours</p>
+                        <div id="timeline-chart" class="chart-container">
+                            <svg width="100%" height="160" viewBox="0 0 600 160" id="timeline-svg"></svg>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Ticket Status</h3>
+                        <p>Current workload</p>
+                        <div id="tickets-status" style="margin-top: 16px;"></div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 16px 0;">🔍 Comments Manager</h3>
+                    
+                    <!-- Search & Filters -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                        <div>
+                            <label style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px;">Search</label>
+                            <input type="text" id="search-comments" placeholder="Search content..." style="width: 100%; padding: 8px 12px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px;">Emotion</label>
+                            <select id="filter-emotion" style="width: 100%; padding: 8px 12px;">
+                                <option value="">All Emotions</option>
+                                <option value="joy">Joy</option>
+                                <option value="anger">Anger</option>
+                                <option value="frustration">Frustration</option>
+                                <option value="sadness">Sadness</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px;">Priority</label>
+                            <select id="filter-priority" style="width: 100%; padding: 8px 12px;">
+                                <option value="">All Priorities</option>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px;">Intent</label>
+                            <select id="filter-intent" style="width: 100%; padding: 8px 12px;">
+                                <option value="">All Intents</option>
+                                <option value="complaint">Complaint</option>
+                                <option value="praise">Praise</option>
+                                <option value="question">Question</option>
+                                <option value="suggestion">Suggestion</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Sort & Actions -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px;">
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <label style="font-size: 12px; color: var(--muted);">Sort by:</label>
+                            <select id="sort-by" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--hover);">
+                                <option value="created_at">Date (Newest)</option>
+                                <option value="created_at-asc">Date (Oldest)</option>
+                                <option value="confidence">Confidence (High)</option>
+                                <option value="priority">Priority</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn" id="btn-export-comments" style="font-size: 12px;">📥 Export</button>
+                            <button class="btn primary" id="btn-apply-filters" style="font-size: 12px;">⚙️ Apply Filters</button>
+                        </div>
+                    </div>
+
+                    <!-- Bulk Actions Toolbar (hidden by default) -->
+                    <div id="bulk-toolbar" style="display: none; background: rgba(220,38,38,0.1); padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(220,38,38,0.3);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span id="bulk-count" style="font-size: 13px; color: var(--text); font-weight: 600;">0 selected</span>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn" id="btn-bulk-priority" style="font-size: 12px; color: #ef4444;">Set Priority</button>
+                                <button class="btn" id="btn-bulk-create-tickets" style="font-size: 12px; color: #ef4444;">Create Tickets</button>
+                                <button class="btn" id="btn-bulk-delete" style="font-size: 12px; color: #ef4444;">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comments Table -->
+                    <div style="overflow-x: auto;">
+                        <table class="table" style="min-width: 1000px;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="select-all-comments" style="cursor: pointer;"></th>
+                                    <th style="min-width: 200px;">Customer</th>
+                                    <th style="min-width: 300px;">Comment</th>
+                                    <th style="min-width: 80px;">Emotion</th>
+                                    <th style="min-width: 80px;">Priority</th>
+                                    <th style="min-width: 100px;">Confidence</th>
+                                    <th style="min-width: 80px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comments-list">
+                                <tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--muted);">Loading comments...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 4px 0;">⚡ Priority Triage Queue</h3>
+                            <p style="font-size: 12px; color: var(--muted); margin: 0;">Items flagged for immediate intervention</p>
+                        </div>
+                        <button class="btn primary" style="background: #f43f5e; border: none; color: white; font-weight: 600;">Acknowledge All</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="table" style="min-width: 1000px;">
+                            <thead>
+                                <tr>
+                                    <th style="min-width: 200px;">User / Source</th>
+                                    <th>Comment Snippet</th>
+                                    <th style="min-width: 80px;">Emotion</th>
+                                    <th style="min-width: 100px;">Routed To</th>
+                                    <th style="min-width: 100px;">AI Confidence</th>
+                                    <th style="min-width: 100px;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="triage-queue">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--muted);">Loading triage items...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 16px 0;">📊 Top Complaint Categories</h3>
+                    <div id="top-intents" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;"></div>
+                </div>
+            </div>
+
+            <!-- Auto Routing Tab -->
+            <div id="tab-routing" class="tab-panel">
+                <div class="grid grid-cols-3">
+                    <div class="kpi-tile">
+                        <div class="kpi-label">Total Routed</div>
+                        <div class="kpi-value" id="routing-total">0</div>
+                    </div>
+                    <div class="kpi-tile">
+                        <div class="kpi-label">Active Rules</div>
+                        <div class="kpi-value" id="routing-rules-count">0</div>
+                    </div>
+                    <div class="kpi-tile">
+                        <div class="kpi-label">Avg Confidence</div>
+                        <div class="kpi-value"><span id="routing-confidence">0</span><span class="kpi-unit">%</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0;">Routing Queues</h3>
+                        <button class="btn primary" id="btn-new-rule">+ Add Rule</button>
+                    </div>
+                    <div class="grid grid-cols-3" id="routing-queues">
+                        <div style="grid-column: 1; padding: 24px; text-align: center; color: var(--muted);">Loading...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Active Routing Rules</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Pattern</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="routing-rules-table"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sentic Mapping Tab -->
+            <div id="tab-sentic" class="tab-panel">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0;">Emotion to Priority Mappings</h3>
+                        <button class="btn primary" id="btn-new-mapping">+ Add Mapping</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Emotion</label>
+                        <input type="text" id="mapping-emotion" placeholder="e.g., angry, frustrated, sad" />
+                    </div>
+                    <div class="form-group">
+                        <label>Maps to Priority</label>
+                        <select id="mapping-priority">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                    <button class="btn primary" id="btn-add-mapping" style="margin-bottom: 20px; width: 100%;">Save Mapping</button>
+
+                    <div style="border-top: 1px solid var(--border); padding-top: 20px;">
+                        <h4>Current Mappings</h4>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Emotion</th>
+                                    <th>Maps To</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sentic-mappings-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Emotion Distribution</h3>
+                    <div id="emotion-chart" class="chart-container">
+                        <svg width="100%" height="240" viewBox="0 0 600 240" id="emotion-svg"></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Tab -->
+            <div id="tab-config" class="tab-panel">
+                <div class="card">
+                    <h3>System Configuration</h3>
+                    
+                    <div style="border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px;">
+                        <h4>AI Settings</h4>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="cfg-force-local" /> Force Local AI (No API Calls)
+                            </label>
+                            <p style="margin-top: 6px; color: var(--muted); font-size: 12px;">Uses simulated AI responses when enabled</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Confidence Threshold</label>
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <input type="range" id="cfg-confidence" min="0" max="1" step="0.05" style="width: 100%;" />
+                                <span id="cfg-confidence-value" style="min-width: 40px; text-align: right; font-weight: 700;">0.50</span>
+                            </div>
+                            <p style="margin-top: 6px; color: var(--muted); font-size: 12px;">Comments below this confidence will auto-create tickets</p>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px;">
+                        <h4>Advanced Options</h4>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="cfg-logging" checked /> Enable Logging
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="cfg-auto-ticket" checked /> Auto-Create Tickets for High/Critical
+                            </label>
+                        </div>
+                    </div>
+
+                    <button class="btn primary" id="btn-save-config" style="margin-top: 20px; width: 100%;">Save Configuration</button>
+                </div>
+
+                <div class="card">
+                    <h3>🔑 API Key Management</h3>
+                    <p style="color: var(--muted); margin-bottom: 16px; font-size: 13px;">Add and manage third-party API keys (OpenAI, HuggingFace, etc.)</p>
+                    
+                    <div style="background: var(--hover); padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <input type="text" id="api-name" placeholder="e.g., openai, huggingface" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; width: 100%; margin-bottom: 8px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <input type="text" id="api-provider" placeholder="Provider name (OpenAI, HuggingFace, etc.)" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; width: 100%; margin-bottom: 8px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <input type="password" id="api-key" placeholder="Paste API Key here (stored securely)" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; width: 100%; margin-bottom: 8px; font-family: monospace; font-size: 12px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <input type="text" id="api-url" placeholder="Custom API URL (optional)" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; width: 100%; margin-bottom: 8px;">
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="api-model" placeholder="Model name (optional, e.g. gpt-4o)" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                        </div>
+                        <button class="btn primary" id="btn-add-api" style="width: 100%; margin-top: 8px;">➕ Add API</button>
+                    </div>
+
+                    <div id="api-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </div>
+
+                <div class="card">
+                    <h3>System Information</h3>
+                    <div class="stats-bar">
+                        <div class="stat">
+                            <div class="stat-label">Database</div>
+                            <div class="stat-value">SQLite</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">AI Mode</div>
+                            <div class="stat-value" id="info-ai">Local</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">API Status</div>
+                            <div class="stat-value" id="info-api">● Online</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Tab -->
+            <div id="tab-test" class="tab-panel">
+                <div class="card">
+                    <h3>Test AI Analysis</h3>
+                    <div class="form-group">
+                        <label>Paste a comment to analyze:</label>
+                        <textarea id="test-input" placeholder="Enter customer comment here..."></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn primary" id="btn-analyze">🚀 Analyze</button>
+                        <button class="btn" id="btn-add-queue">➕ Add to Queue</button>
+                    </div>
+
+                    <div id="test-result" style="display: none; margin-top: 20px; padding: 20px; background: var(--hover); border-radius: 8px; border-left: 4px solid var(--accent);">
+                        <h4>Analysis Result</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                            <div>
+                                <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Emotion</div>
+                                <div style="font-weight: 700; font-size: 16px;" id="result-emotion">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Intent</div>
+                                <div style="font-weight: 700; font-size: 16px;" id="result-intent">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Priority</div>
+                                <div style="font-weight: 700; font-size: 16px;" id="result-priority">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Confidence</div>
+                                <div style="font-weight: 700; font-size: 16px;" id="result-confidence">—</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                            <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 6px;">Suggested Response</div>
+                            <div id="result-response" style="font-size: 13px; line-height: 1.6;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🌐 Scrape Comments from URL</h3>
+                    <p style="color: var(--muted); margin-bottom: 16px;">Enter a URL and AI will automatically extract all comments, reviews, and feedback</p>
+                    <div class="form-group">
+                        <label>Enter URL:</label>
+                        <input type="text" id="url-input" placeholder="https://example.com/reviews or reddit.com/r/..." style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; width: 100%; font-family: monospace;">
+                    </div>
+                    <div class="form-group">
+                        <label>Context (optional):</label>
+                        <input type="text" id="url-context" placeholder="e.g., 'product reviews', 'forum discussion'" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn primary" id="btn-scrape-url">🔗 Extract Comments</button>
+                        <button class="btn" id="btn-clear-scrape">Clear</button>
+                    </div>
+
+                    <div id="scrape-result" style="display: none; margin-top: 20px; padding: 20px; background: var(--hover); border-radius: 8px; border-left: 4px solid var(--accent);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="margin: 0;">Extracted Comments</h4>
+                            <span id="scrape-count" style="background: var(--accent); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;"></span>
+                        </div>
+                        <div id="scrape-comments" style="max-height: 400px; overflow-y: auto;"></div>
+                        <button class="btn" id="btn-add-scraped" style="margin-top: 12px; width: 100%;">➕ Add All to Analysis Queue</button>
+                    </div>
+
+                    <div id="scrape-error" style="display: none; margin-top: 20px; padding: 16px; background: rgba(244, 67, 54, 0.1); border-radius: 8px; border-left: 4px solid var(--danger); color: var(--danger);"></div>
+                    
+                    <div id="scrape-loading" style="display: none; margin-top: 20px; text-align: center; color: var(--muted);">
+                        <div style="font-size: 12px; margin-bottom: 8px;">Fetching and analyzing URL content...</div>
+                        <div style="display: inline-block; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s infinite;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Recent Analyses</h3>
+                    <div id="test-queue" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+            </div>
+
+            <!-- Inbox Tab -->
+            <div id="tab-inbox" class="tab-panel">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0;">Inbox</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <select id="inbox-filter" class="btn" style="width: auto;">
+                                <option value="">All Comments</option>
+                                <option value="critical">Critical</option>
+                                <option value="high">High Priority</option>
+                                <option value="no-ticket">No Ticket</option>
+                            </select>
+                            <button class="btn" id="btn-refresh-inbox">🔄 Refresh</button>
+                        </div>
+                    </div>
+
+                    <div id="inbox-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Rules -->
+    <div id="rule-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add New Routing Rule</h2>
+                <button class="modal-close" id="modal-close-rule">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Pattern (regex or substring)</label>
+                <input type="text" id="modal-pattern" placeholder="e.g., refund|bug|error" />
+            </div>
+            <div class="form-group">
+                <label>Assign Priority</label>
+                <select id="modal-priority">
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                </select>
+            </div>
+            <button class="btn primary" id="btn-modal-save" style="width: 100%;">Save Rule</button>
+        </div>
+    </div>
+
+    <!-- Modal for Comment Details -->
+    <div id="comment-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>Comment Details</h2>
+                <button class="modal-close" id="modal-close-comment">&times;</button>
+            </div>
+            <div id="comment-modal-content">
+                <div style="padding: 20px; text-align: center; color: var(--muted);">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 ACAS | Advanced Comment Analysis System | Built locally, fully functional</p>
+    </footer>
+
+    <script src="/frontend/i18n.js"></script>
+    <script>
+        // API endpoint - exposed to window for global access
+        window.API = 'http://127.0.0.1:8000';
+        const API = window.API;
+        
+        const state = {
+            currentTab: 'live',
+            language: localStorage.getItem('acas_lang') || 'en',
+            theme: localStorage.getItem('acas_theme') || 'dark',
+            user: {
+                id: localStorage.getItem('user_id'),
+                username: localStorage.getItem('username'),
+                role: localStorage.getItem('role')
+            },
+            metrics: null,
+            comments: [],
+            tickets: [],
+            rules: [],
+            sentics: [],
+            config: {force_local: true, confidence: 0.5, logging: true, auto_ticket: true}
+        };
+
+        // Check authentication on load
+        function checkAuth() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                window.location.href = '/frontend/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Utility functions
+        async function api(path, options = {}) {
+            try {
+                const token = localStorage.getItem('auth_token');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
+                };
+                // Hardcoded to ensure port 8000 is used
+                const url = 'http://127.0.0.1:8000' + path;
+                const res = await fetch(url, {headers, ...options});
+                if (res.status === 401) {
+                    localStorage.removeItem('auth_token');
+                    window.location.href = '/frontend/login.html';
+                    return;
+                }
+                if (!res.ok) throw new Error(`${res.status}`);
+                return await res.json();
+            } catch (e) {
+                console.error('API:', path, e.message);
+                throw e;
+            }
+        }
+
+        function escapeHtml(t) {
+            const m = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+            return (t || '').replace(/[&<>"']/g, c => m[c]);
+        }
+
+        // ===== COMMENT MANAGER FUNCTIONS =====
+        
+        async function applyCommentFilters() {
+            try {
+                const search = document.getElementById('search-comments').value || '';
+                const emotion = document.getElementById('filter-emotion').value || '';
+                const priority = document.getElementById('filter-priority').value || '';
+                const intent = document.getElementById('filter-intent').value || '';
+                const sortBy = document.getElementById('sort-by').value.split('-')[0];
+                const sortOrder = document.getElementById('sort-by').value.includes('asc') ? 'asc' : 'desc';
+                
+                let url = `/comments?limit=500&sort_by=${sortBy}&sort_order=${sortOrder}`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+                if (emotion) url += `&emotion=${emotion}`;
+                if (priority) url += `&priority=${priority}`;
+                if (intent) url += `&intent=${intent}`;
+                
+                const comments = await api(url);
+                state.comments = comments;
+                renderCommentsList(comments);
+            } catch (e) {
+                alert('Error loading comments: ' + e.message);
+            }
+        }
+
+        function renderCommentsList(comments) {
+            const container = document.getElementById('comments-list');
+            if (!comments || comments.length === 0) {
+                container.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--muted);">No comments found</td></tr>';
+                return;
+            }
+
+            const emotionEmojis = {
+                'joy': '😊', 'anger': '😠', 'frustration': '😤', 'sadness': '😢',
+                'confusion': '😕', 'fear': '😨', 'neutral': '😐'
+            };
+
+            container.innerHTML = comments.map((c, idx) => {
+                const emotionEmoji = emotionEmojis[c.emotion?.toLowerCase()] || '•';
+                const confidenceColor = c.confidence > 0.8 ? '#10b981' : c.confidence > 0.6 ? '#f97316' : '#ef4444';
+                
+                return `
+                    <tr>
+                        <td><input type="checkbox" class="comment-checkbox" data-id="${c.id}" style="cursor: pointer;"></td>
+                        <td>${escapeHtml(c.customer_name || 'Anonymous')}</td>
+                        <td>
+                            <div style="cursor: pointer; color: var(--accent); text-decoration: underline;" onclick="showCommentDetails(${c.id})">
+                                ${escapeHtml((c.content || '').substring(0, 60))}${(c.content || '').length > 60 ? '...' : ''}
+                            </div>
+                        </td>
+                        <td><span>${emotionEmoji} ${c.emotion || 'unknown'}</span></td>
+                        <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${c.priority === 'Critical' ? 'rgba(239,68,68,0.15)' : 'rgba(249,115,22,0.15)'}; color: ${c.priority === 'Critical' ? '#ef4444' : '#f97316'};">${c.priority || 'Low'}</span></td>
+                        <td><span style="color: ${confidenceColor}; font-weight: 600;">${Math.round((c.confidence || 0) * 100)}%</span></td>
+                        <td>
+                            <button class="btn" onclick="showCommentDetails(${c.id})" style="font-size: 11px; padding: 4px 8px;">👁️</button>
+                            <button class="btn" onclick="addCommentTicket(${c.id})" style="font-size: 11px; padding: 4px 8px;">🎫</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Add event listeners to checkboxes
+            document.querySelectorAll('.comment-checkbox').forEach(cb => {
+                cb.addEventListener('change', updateBulkToolbar);
+            });
+        }
+
+        function toggleSelectAll(e) {
+            const isChecked = e.target.checked;
+            document.querySelectorAll('.comment-checkbox').forEach(cb => {
+                cb.checked = isChecked;
+            });
+            updateBulkToolbar();
+        }
+
+        function updateBulkToolbar() {
+            const selected = document.querySelectorAll('.comment-checkbox:checked').length;
+            const toolbar = document.getElementById('bulk-toolbar');
+            const count = document.getElementById('bulk-count');
+            
+            if (selected > 0) {
+                toolbar.style.display = 'flex';
+                count.textContent = `${selected} selected`;
+            } else {
+                toolbar.style.display = 'none';
+            }
+        }
+
+        async function exportComments() {
+            try {
+                const emotion = document.getElementById('filter-emotion').value || '';
+                const priority = document.getElementById('filter-priority').value || '';
+                const intent = document.getElementById('filter-intent').value || '';
+                
+                let url = '/comments/export/download?format=csv';
+                if (emotion) url += `&emotion=${emotion}`;
+                if (priority) url += `&priority=${priority}`;
+                if (intent) url += `&intent=${intent}`;
+                
+                const result = await api(url);
+                const link = `${API}${result.url}`;
+                
+                const a = document.createElement('a');
+                a.href = link;
+                a.download = result.filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                alert(`✅ Exported ${result.count} comments`);
+            } catch (e) {
+                alert('Export failed: ' + e.message);
+            }
+        }
+
+        async function showCommentDetails(commentId) {
+            try {
+                const comment = await api(`/comments/${commentId}`);
+                const modal = document.getElementById('comment-modal');
+                const content = document.getElementById('comment-modal-content');
+                
+                const emotionColor = {'joy': '#10b981', 'anger': '#ef4444', 'frustration': '#f97316', 'sadness': '#8b5cf6', 'neutral': '#6b7280'}[comment.emotion?.toLowerCase()] || '#6b7280';
+                
+                content.innerHTML = `
+                    <div style="padding: 20px;">
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-size: 12px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Customer</div>
+                            <div style="font-size: 14px; font-weight: 600;">${escapeHtml(comment.customer_name || 'Anonymous')}</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-size: 12px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px;">Comment</div>
+                            <div style="padding: 12px; background: var(--hover); border-radius: 6px; border-left: 3px solid ${emotionColor}; line-height: 1.6;">
+                                ${escapeHtml(comment.content || '')}
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div>
+                                <div style="font-size: 12px; color: var(--muted);">Emotion</div>
+                                <div style="padding: 4px 8px; border-radius: 4px; background: rgba(16,185,129,0.1); color: #10b981; font-weight: 600; display: inline-block; margin-top: 4px;">
+                                    ${comment.emotion || 'unknown'}
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: var(--muted);">Intent</div>
+                                <div style="padding: 4px 8px; border-radius: 4px; background: rgba(59,130,246,0.1); color: #3b82f6; font-weight: 600; display: inline-block; margin-top: 4px;">
+                                    ${comment.intent || 'unknown'}
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: var(--muted);">Priority</div>
+                                <div style="padding: 4px 8px; border-radius: 4px; background: ${comment.priority === 'Critical' ? 'rgba(239,68,68,0.15)' : 'rgba(249,115,22,0.15)'}; color: ${comment.priority === 'Critical' ? '#ef4444' : '#f97316'}; font-weight: 600; display: inline-block; margin-top: 4px;">
+                                    ${comment.priority || 'Low'}
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: var(--muted);">Confidence</div>
+                                <div style="font-size: 14px; font-weight: 600; margin-top: 4px;">${Math.round((comment.confidence || 0) * 100)}%</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-size: 12px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px;">AI Suggestion</div>
+                            <p style="margin: 0; padding: 12px; background: var(--hover); border-radius: 6px; line-height: 1.6;">
+                                ${escapeHtml(comment.suggested_response || 'No response suggestion')}
+                            </p>
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn primary" onclick="addCommentTicket(${comment.id})" style="flex: 1;">🎫 Create Ticket</button>
+                            <button class="btn" onclick="document.getElementById('comment-modal').classList.remove('active');" style="flex: 1;">Close</button>
+                        </div>
+                    </div>
+                `;
+                
+                modal.classList.add('active');
+            } catch (e) {
+                alert('Error loading comment details: ' + e.message);
+            }
+        }
+
+        async function addCommentTicket(commentId) {
+            try {
+                const comment = state.comments.find(c => c.id === commentId);
+                if (!comment) {
+                    const res = await api(`/comments/${commentId}`);
+                    comment = res;
+                }
+                
+                await api('/tickets/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        comment_id: commentId,
+                        title: (comment.intent || 'Issue').substring(0, 50),
+                        description: comment.content.substring(0, 500),
+                        priority: comment.priority
+                    })
+                });
+                
+                alert('✅ Ticket created');
+                document.getElementById('comment-modal').classList.remove('active');
+            } catch (e) {
+                if (!e.message.includes('already')) alert('Error: ' + e.message);
+            }
+        }
+
+        // Initialize
+        async function init() {
+            // Initialize language to saved preference
+            await i18n.switchLanguage(state.language);
+            await updatePageTranslations();
+            document.getElementById('language-select').value = state.language;
+            
+            // Update user profile display
+            document.getElementById('current-username').textContent = state.user.username || 'User';
+            document.getElementById('current-role').textContent = state.user.role || 'user';
+
+            // Logout handler
+            document.getElementById('btn-logout').addEventListener('click', () => {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('username');
+                localStorage.removeItem('role');
+                window.location.href = '/frontend/login.html';
+            });
+
+            const tabs = [
+                {id: 'live', label: '📊', title: 'Live Dashboard'},
+                {id: 'routing', label: '⚙️', title: 'Auto Routing'},
+                {id: 'sentic', label: '🔎', title: 'Sentic Mapping'},
+                {id: 'config', label: '🔧', title: 'Configuration'},
+                {id: 'test', label: '🧪', title: 'Test'},
+                {id: 'inbox', label: '📥', title: 'Inbox'}
+            ];
+
+            const tabsContainer = document.getElementById('sidebar-tabs');
+            tabsContainer.innerHTML = tabs.map(t => 
+                `<button class="tab ${t.id === 'live' ? 'active' : ''}" data-tab="${t.id}">${t.label} ${t.title}</button>`
+            ).join('');
+
+            tabs.forEach(tab => {
+                document.querySelector(`[data-tab="${tab.id}"]`).addEventListener('click', () => switchTab(tab.id));
+            });
+
+            document.getElementById('language-select').addEventListener('change', async e => {
+                state.language = e.target.value;
+                await i18n.switchLanguage(e.target.value);
+                localStorage.setItem('acas_lang', e.target.value);
+            });
+
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                document.body.classList.toggle('light');
+                state.theme = document.body.classList.contains('light') ? 'light' : 'dark';
+                localStorage.setItem('acas_theme', state.theme);
+            });
+
+            // Sidebar toggle
+            document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+                document.querySelector('.sidebar').classList.toggle('collapsed');
+                document.getElementById('btn-toggle-sidebar').textContent = 
+                    document.querySelector('.sidebar').classList.contains('collapsed') ? '☰ Menu' : '✕ Close';
+            });
+
+            // Show toggle button on larger screens
+            function updateSidebarToggle() {
+                if (window.innerWidth > 768) {
+                    document.getElementById('btn-toggle-sidebar').style.display = 'block';
+                } else {
+                    document.getElementById('btn-toggle-sidebar').style.display = 'none';
+                    document.querySelector('.sidebar').classList.remove('collapsed');
+                }
+            }
+            updateSidebarToggle();
+            window.addEventListener('resize', updateSidebarToggle);
+
+            // Button listeners
+            document.getElementById('btn-new-rule').addEventListener('click', () => {
+                document.getElementById('modal-pattern').value = '';
+                document.getElementById('modal-priority').value = 'High';
+                document.getElementById('rule-modal').classList.add('active');
+            });
+
+            document.getElementById('modal-close-rule').addEventListener('click', () => {
+                document.getElementById('rule-modal').classList.remove('active');
+            });
+
+            document.getElementById('btn-modal-save').addEventListener('click', addRoutingRule);
+            document.getElementById('btn-add-mapping').addEventListener('click', addSenticMapping);
+            
+            // Bulk operations
+            document.getElementById('btn-bulk-priority').addEventListener('click', bulkSetPriority);
+            document.getElementById('btn-bulk-create-tickets').addEventListener('click', bulkCreateTickets);
+            document.getElementById('btn-bulk-delete').addEventListener('click', bulkDelete);
+            
+            // Templates
+            if (document.getElementById('btn-add-template')) {
+                document.getElementById('btn-add-template').addEventListener('click', () => {
+                    const name = prompt('Template name:');
+                    if (name) {
+                        document.getElementById('template-name').value = name;
+                        document.getElementById('template-content').focus();
+                    }
+                });
+            }
+            if (document.getElementById('btn-save-template')) {
+                document.getElementById('btn-save-template').addEventListener('click', saveTemplate);
+            }
+            
+            // Analytics
+            if (document.getElementById('btn-load-analytics')) {
+                document.getElementById('btn-load-analytics').addEventListener('click', () => {
+                    renderSentimentTrend();
+                    renderResponseRate();
+                    alert('Analytics rendered');
+                });
+            }
+            
+            // Export
+            if (document.getElementById('btn-export-csv')) {
+                document.getElementById('btn-export-csv').addEventListener('click', exportCommentsToCSV);
+            }
+            if (document.getElementById('btn-export-json')) {
+                document.getElementById('btn-export-json').addEventListener('click', exportCommentsToJSON);
+            }
+            
+            document.getElementById('btn-analyze').addEventListener('click', analyzeComment);
+            document.getElementById('btn-add-queue').addEventListener('click', queueComment);
+            document.getElementById('btn-scrape-url').addEventListener('click', scrapeUrl);
+            document.getElementById('btn-clear-scrape').addEventListener('click', clearScrapeScrape);
+            document.getElementById('btn-add-scraped').addEventListener('click', addScrapedToQueue);
+            document.getElementById('btn-save-config').addEventListener('click', saveConfig);
+            document.getElementById('btn-refresh-inbox').addEventListener('click', loadInbox);
+            document.getElementById('inbox-filter').addEventListener('change', loadInbox);
+
+            document.getElementById('cfg-confidence').addEventListener('input', e => {
+                document.getElementById('cfg-confidence-value').textContent = e.target.value;
+            });
+
+            // API Management
+            document.getElementById('btn-add-api').addEventListener('click', addNewAPI);
+
+            // Comment Manager
+            document.getElementById('btn-apply-filters').addEventListener('click', applyCommentFilters);
+            document.getElementById('btn-export-comments').addEventListener('click', exportComments);
+            document.getElementById('sort-by').addEventListener('change', applyCommentFilters);
+            document.getElementById('select-all-comments').addEventListener('change', toggleSelectAll);
+            document.getElementById('modal-close-comment').addEventListener('click', () => {
+                document.getElementById('comment-modal').classList.remove('active');
+            });
+
+            switchTab('live');
+            loadAllData();
+            setInterval(() => { if (state.currentTab === 'live') loadMetrics(); }, 30000);
+        }
+
+        function switchTab(id) {
+            state.currentTab = id;
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${id}`).classList.add('active');
+            document.querySelector(`[data-tab="${id}"]`).classList.add('active');
+
+            if (id === 'live') loadMetrics();
+            if (id === 'routing') loadRoutingTab();
+            if (id === 'sentic') loadSenticTab();
+            if (id === 'config') loadConfigTab();
+            if (id === 'inbox') loadInbox();
+        }
+
+        async function loadAllData() {
+            try {
+                // Load comments first since loadMetrics needs them
+                const comments = await api('/comments/?limit=100');
+                state.comments = comments;
+                renderCommentsList(comments);  // Populate the new comments list
+                
+                await Promise.all([
+                    api('/health').then(h => {
+                        document.getElementById('api-status').textContent = '● API';
+                        document.getElementById('api-status').style.color = '#10b981';
+                    }).catch(() => {
+                        document.getElementById('api-status').textContent = '● API';
+                        document.getElementById('api-status').style.color = '#ef4444';
+                    }),
+                    loadMetrics(),
+                    api('/admin/rules/').then(data => { state.rules = data; }),
+                    api('/admin/sentics/').then(data => { state.sentics = data; }),
+                    api('/admin/config/').then(data => { state.config = data; })
+                ]);
+            } catch (e) {
+                console.error('Load error:', e);
+            }
+        }
+
+        async function loadMetrics() {
+            try {
+                const m = await api('/dashboard/metrics');
+                state.metrics = m;
+                
+                document.getElementById('kpi-total').textContent = m.total_comments || 0;
+                document.getElementById('kpi-attention').textContent = m.high_priority_tickets || 0;
+                document.getElementById('kpi-resolved').textContent = m.ticket_status_breakdown?.find(t => t.status === 'closed')?.count || 0;
+
+                const avgConf = state.comments.length ? Math.round(state.comments.reduce((s, c) => s + (c.confidence || 0), 0) / state.comments.length * 100) : 0;
+                document.getElementById('kpi-confidence').textContent = avgConf;
+
+                renderSentimentChart(m.sentiment_distribution);
+                renderRoutingDonut(m.priority_distribution);
+                renderTicketStatus(m.ticket_status_breakdown);
+                renderTopIntents();
+                renderTriageQueue();
+
+                try {
+                    const h = await api('/dashboard/metrics/history');
+                    renderTimeline(h.hours);
+                } catch (e) {
+                    console.log('History fetch failed, using sample data:', e);
+                    renderTimeline(null);
+                }
+            } catch (e) {
+                console.error('Metrics error:', e);
+                renderSentimentChart(null);
+                renderRoutingDonut(null);
+                renderTicketStatus(null);
+                renderTopIntents();
+                renderTriageQueue();
+                renderTimeline(null);
+            }
+        }
+
+        function renderSentimentChart(data) {
+            const svg = document.getElementById('sentiment-svg');
+            svg.innerHTML = '';
+
+            // Fallback sample data if none provided
+            if (!data || !data.length) {
+                data = [
+                    { emotion: 'Joy / Positive', count: 112 },
+                    { emotion: 'Frustration', count: 63 },
+                    { emotion: 'Confusion', count: 38 },
+                    { emotion: 'Anger', count: 25 },
+                    { emotion: 'Sarcasm', count: 12 }
+                ];
+            }
+
+            const colors = {
+                'joy': '#10b981',
+                'positive': '#10b981',
+                'frustration': '#f97316',
+                'confusion': '#60a5fa',
+                'anger': '#ef4444',
+                'fear': '#a78bfa',
+                'sarcasm': '#ec4899'
+            };
+            const total = data.reduce((s, d) => s + d.count, 0);
+            let y = 20;
+
+            data.forEach((item, idx) => {
+                const pct = total ? (item.count / total * 100) : 0;
+                const barWidth = Math.max(15, pct * 3.2);
+                const emotion = (item.emotion || 'unknown').toLowerCase();
+                const color = colors[emotion] || (Object.values(colors)[idx % Object.values(colors).length]);
+
+                // Emotion label
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', '10');
+                text.setAttribute('y', y + 5);
+                text.setAttribute('font-size', '13');
+                text.setAttribute('font-weight', '600');
+                text.setAttribute('fill', 'var(--text)');
+                text.textContent = item.emotion;
+                svg.appendChild(text);
+
+                // Bar background
+                const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bgRect.setAttribute('x', '120');
+                bgRect.setAttribute('y', y - 10);
+                bgRect.setAttribute('width', '270');
+                bgRect.setAttribute('height', '16');
+                bgRect.setAttribute('fill', 'var(--hover)');
+                bgRect.setAttribute('rx', '4');
+                svg.appendChild(bgRect);
+
+                // Bar fill
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', '120');
+                rect.setAttribute('y', y - 10);
+                rect.setAttribute('width', barWidth);
+                rect.setAttribute('height', '16');
+                rect.setAttribute('fill', color);
+                rect.setAttribute('rx', '4');
+                svg.appendChild(rect);
+
+                // Percentage text
+                const pctText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                pctText.setAttribute('x', 400);
+                pctText.setAttribute('y', y + 5);
+                pctText.setAttribute('font-size', '13');
+                pctText.setAttribute('font-weight', '600');
+                pctText.setAttribute('fill', 'var(--text)');
+                pctText.setAttribute('text-anchor', 'end');
+                pctText.textContent = `${Math.round(pct)}%`;
+                svg.appendChild(pctText);
+
+                y += 32;
+            });
+        }
+
+        function renderRoutingDonut(data) {
+            const svg = document.getElementById('routing-svg');
+            const legend = document.getElementById('routing-legend');
+            if (!svg) return;
+
+            svg.innerHTML = '';
+            legend.innerHTML = '';
+
+            // Fallback sample data if none provided
+            if (!data || !data.length) {
+                data = [
+                    { priority: 'Support Queue', count: 78300 },
+                    { priority: 'Tech / Bug Reports', count: 42700 },
+                    { priority: 'Product / Feature Req.', count: 21300 }
+                ];
+            }
+
+            const cx = 70, cy = 70, r = 50, thickness = 16;
+            const total = data.reduce((s, d) => s + d.count, 0);
+            const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
+
+            let currentAngle = -Math.PI / 2;
+            data.forEach((item, idx) => {
+                const ratio = item.count / total;
+                const angle = ratio * 2 * Math.PI;
+                
+                // Draw arc
+                const x1 = cx + (r) * Math.cos(currentAngle);
+                const y1 = cy + (r) * Math.sin(currentAngle);
+                const x2 = cx + (r) * Math.cos(currentAngle + angle);
+                const y2 = cy + (r) * Math.sin(currentAngle + angle);
+                
+                const largeArc = angle > Math.PI ? 1 : 0;
+                
+                const x1o = cx + (r + thickness) * Math.cos(currentAngle);
+                const y1o = cy + (r + thickness) * Math.sin(currentAngle);
+                const x2o = cx + (r + thickness) * Math.cos(currentAngle + angle);
+                const y2o = cy + (r + thickness) * Math.sin(currentAngle + angle);
+                
+                const path = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} L ${x2o} ${y2o} A ${r + thickness} ${r + thickness} 0 ${largeArc} 0 ${x1o} ${y1o} Z`;
+                
+                const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                pathEl.setAttribute('d', path);
+                pathEl.setAttribute('fill', colors[idx % colors.length]);
+                pathEl.setAttribute('opacity', '0.85');
+                svg.appendChild(pathEl);
+                
+                currentAngle += angle;
+            });
+
+            // Legend
+            let legendHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+            data.forEach((item, idx) => {
+                const pct = ((item.count / total) * 100).toFixed(1);
+                legendHTML += `<div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 10px; height: 10px; border-radius: 2px; background: ${colors[idx % colors.length]}; opacity: 0.85;"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 13px;">${item.priority || item.status || 'Unknown'}</div>
+                        <div style="font-size: 12px; color: var(--muted);">${item.count / 1000}k</div>
+                    </div>
+                </div>`;
+            });
+            legendHTML += '</div>';
+            legend.innerHTML = legendHTML;
+        }
+
+        function renderPriorityChart(data) {
+            const chart = document.getElementById('priority-chart');
+            chart.innerHTML = '';
+            
+            if (!data || !data.length) return;
+
+            const colors = {Critical: '#7f1d1d', High: '#7c2d12', Medium: '#78350f', Low: '#064e3b'};
+            const total = data.reduce((s, d) => s + d.count, 0);
+            chart.innerHTML = data.map(item => {
+                const pct = total ? (item.count / total * 100) : 0;
+                return `<div style="margin-bottom: 16px;"><div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; font-weight: 600;"><span>${item.priority}</span><span>${item.count} (${Math.round(pct)}%)</span></div><div style="height: 8px; background: var(--hover); border-radius: 4px; overflow: hidden;"><div style="height: 100%; width: ${pct}%; background: ${colors[item.priority] || '#6b7280'}; transition: width 0.3s ease;"></div></div></div>`;
+            }).join('');
+        }
+
+        function renderTimeline(hours) {
+            const svg = document.getElementById('timeline-svg');
+            if (!svg) return;
+            
+            // Fallback sample data if none provided
+            if (!hours || !hours.length) {
+                hours = Array.from({length: 24}, (_, i) => ({
+                    hour: i,
+                    count: Math.floor(Math.random() * 15) + 5
+                }));
+            }
+
+            const values = hours.map(h => h.count);
+            const max = Math.max(...values, 1);
+            const min = Math.min(...values, 0);
+            const range = max - min || 1;
+            const w = 600, h = 160, padding = 40;
+            const plotW = w - 2 * padding, plotH = h - 2 * padding;
+
+            let path = `M ${padding} ${h - padding}`;
+            values.forEach((v, i) => {
+                const x = padding + (i / (values.length - 1 || 1)) * plotW;
+                const y = h - padding - ((v - min) / range) * plotH;
+                path += ` L ${x} ${y}`;
+            });
+
+            svg.innerHTML = `<path d="${path} L ${w - padding} ${h - padding}" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /><path d="${path} L ${w - padding} ${h - padding} Z" fill="url(#gradient)" opacity="0.2" /><defs><linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.4" /><stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0.01" /></linearGradient></defs>`;
+        }
+
+        function renderTicketStatus(data) {
+            const container = document.getElementById('tickets-status');
+            
+            // Fallback sample data if none provided
+            if (!data || !data.length) {
+                data = [
+                    { status: 'open', count: 24 },
+                    { status: 'in_progress', count: 18 },
+                    { status: 'closed', count: 18 }
+                ];
+            }
+
+            const colors = {open: '#3b82f6', in_progress: '#8b5cf6', closed: '#10b981'};
+            const total = data.reduce((s, d) => s + d.count, 0);
+            container.innerHTML = data.map(item => {
+                const pct = total ? (item.count / total * 100) : 0;
+                const statusLabel = (item.status || '').replace('_', ' ').replace('open', 'Open').replace('in progress', 'In Progress').replace('closed', 'Closed');
+                return `<div style="margin-bottom: 12px;"><div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; font-weight: 600;"><span>${statusLabel}</span><span>${item.count}</span></div><div style="height: 6px; background: var(--hover); border-radius: 3px; overflow: hidden;"><div style="height: 100%; width: ${pct}%; background: ${colors[item.status] || '#6b7280'}; transition: width 0.3s ease;"></div></div></div>`;
+            }).join('');
+        }
+
+        function renderTopIntents() {
+            const container = document.getElementById('top-intents');
+            let intents = {};
+            
+            if (state.comments && state.comments.length) {
+                state.comments.forEach(c => {
+                    const intent = c.intent || 'unknown';
+                    intents[intent] = (intents[intent] || 0) + 1;
+                });
+            } else {
+                // Fallback sample data
+                intents = {
+                    'Bug Report': 45,
+                    'Feature Request': 32,
+                    'Support Query': 28,
+                    'Complaint': 18
+                };
+            }
+
+            const sorted = Object.entries(intents).sort((a, b) => b[1] - a[1]).slice(0, 4);
+            container.innerHTML = sorted.map(([intent, count]) => `<div class="stat"><div class="stat-label">${escapeHtml(intent)}</div><div class="stat-value">${count}</div></div>`).join('');
+        }
+
+        function renderTriageQueue() {
+            const container = document.getElementById('triage-queue');
+            let triageComments = [];
+            
+            if (state.comments && state.comments.length) {
+                triageComments = state.comments
+                    .filter(c => (c.priority === 'Critical' || c.priority === 'High') && c.status !== 'resolved')
+                    .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+                    .slice(0, 10);
+            }
+
+            if (!triageComments.length) {
+                // Fallback sample data if no comments
+                triageComments = [
+                    { customer_name: '@dev_alex', content: 'Oh great, another UI update nobody asked for while the core API still crashes...', emotion: 'Sarcasm', source: 'twitter', confidence: 0.96, priority: 'Critical' },
+                    { customer_name: 'Sarah Jenkins', content: "I've been trying to reset my password for 3 days. I am locked out of my entire enterprise...", emotion: 'Frustration', source: 'email', confidence: 0.98, priority: 'High' },
+                    { customer_name: 'CryptoKing99', content: 'Click here to win 5000 free coins instantly!!! [link]', emotion: 'Spam', source: 'twitter', confidence: 0.99, priority: 'High' },
+                    { customer_name: 'Mike T.', content: 'The new reporting dashboard is actually really fast. Good job on the latest patch.', emotion: 'Joy', source: 'facebook', confidence: 0.92, priority: 'High' }
+                ];
+            }
+
+            const emotionBadges = {
+                'joy': { bg: 'rgba(16,185,129,0.15)', color: '#10b981', text: 'Joy' },
+                'positive': { bg: 'rgba(16,185,129,0.15)', color: '#10b981', text: 'Positive' },
+                'frustration': { bg: 'rgba(249,115,22,0.15)', color: '#f97316', text: 'Frustration' },
+                'confusion': { bg: 'rgba(96,165,250,0.15)', color: '#60a5fa', text: 'Confusion' },
+                'anger': { bg: 'rgba(239,68,68,0.15)', color: '#ef4444', text: 'Anger' },
+                'fear': { bg: 'rgba(167,139,250,0.15)', color: '#a78bfa', text: 'Fear' },
+                'sarcasm': { bg: 'rgba(236,72,153,0.15)', color: '#ec4899', text: 'Sarcasm' },
+                'spam': { bg: 'rgba(107,114,128,0.15)', color: '#9ca3af', text: 'Spam' }
+            };
+
+            const statusBadges = {
+                'open': { text: 'Routed', bg: '#1e3a8a', color: '#bfdbfe' },
+                'in_progress': { text: 'In Progress', bg: '#6b21a8', color: '#e9d5ff' },
+                'closed': { text: 'Resolved', bg: '#064e3b', color: '#a7f3d0' },
+                'resolved': { text: 'Resolved', bg: '#064e3b', color: '#a7f3d0' },
+                'intervention': { text: 'Intervention', bg: '#7f1d1d', color: '#fecaca' },
+                'high_priority': { text: 'High Priority', bg: '#7c2d12', color: '#fed7aa' },
+                'filtering': { text: 'Filtered', bg: '#78350f', color: '#fef08a' }
+            };
+
+            container.innerHTML = triageComments.map(comment => {
+                const emotionKey = (comment.emotion || 'unknown').toLowerCase();
+                const emotionBadge = emotionBadges[emotionKey] || emotionBadges['spam'];
+                const confidence = Math.round((comment.confidence || 0.75) * 100);
+                
+                // Determine status based on priority and routing
+                let statusKey = 'high_priority';
+                if (comment.priority === 'Critical') statusKey = 'intervention';
+                else if (comment.source) statusKey = 'routed';
+                
+                const statusBadge = statusBadges[statusKey] || statusBadges['high_priority'];
+
+                return `
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">${escapeHtml(comment.customer_name || 'Anonymous')} <span style="color: var(--muted); font-weight: 400;">(${escapeHtml(comment.source || 'unknown')})</span></div>
+                            <div style="font-size: 12px; color: var(--muted); line-height: 1.4;">${escapeHtml((comment.content || '').substring(0, 45))}${(comment.content || '').length > 45 ? '...' : ''}</div>
+                        </td>
+                        <td style="color: var(--muted); font-size: 12px;">${escapeHtml((comment.content || '').substring(0, 45))}${(comment.content || '').length > 45 ? '...' : ''}</td>
+                        <td>
+                            <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${emotionBadge.bg}; color: ${emotionBadge.color};">
+                                ${emotionBadge.text}
+                            </span>
+                        </td>
+                        <td style="font-size: 13px; font-weight: 500;">${escapeHtml(comment.source || 'Support')}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 100%; background: var(--hover); border-radius: 3px; height: 6px; overflow: hidden;">
+                                    <div style="height: 100%; width: ${confidence}%; background: #10b981; border-radius: 3px;"></div>
+                                </div>
+                                <div style="font-weight: 600; font-size: 12px; min-width: 35px; color: #10b981;">${confidence}%</div>
+                            </div>
+                        </td>
+                        <td>
+                            <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${statusBadge.bg}; color: ${statusBadge.color};">
+                                ${statusBadge.text}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function loadRoutingTab() {
+            // Always render queues first
+            renderRoutingQueues();
+            
+            try {
+                const rules = await api('/admin/rules/');
+                state.rules = rules || [];
+                document.getElementById('routing-rules-count').textContent = (rules || []).filter(r => r.enabled).length;
+                document.getElementById('routing-total').textContent = (state.comments || []).length;
+                const avgConf = (state.comments || []).length ? Math.round((state.comments || []).reduce((s, c) => s + (c.confidence || 0), 0) / (state.comments || []).length * 100) : 0;
+                document.getElementById('routing-confidence').textContent = avgConf;
+                renderRoutingRules(rules || []);
+            } catch (e) {
+                console.error('Routing error:', e);
+                // Set defaults even if API fails
+                document.getElementById('routing-rules-count').textContent = '0';
+                document.getElementById('routing-total').textContent = (state.comments || []).length;
+                document.getElementById('routing-confidence').textContent = '0';
+                renderRoutingRules([]);
+            }
+        }
+
+        function renderRoutingQueues() {
+            const container = document.getElementById('routing-queues');
+            if (!container) return;
+            
+            const supportKeys = ['question', 'support', 'inquiry', 'help', 'billing', 'account'];
+            const techKeys = ['bug', 'error', 'crash', 'issue', 'problem', 'technical'];
+            const productKeys = ['feature', 'request', 'suggestion', 'feedback', 'idea'];
+
+            let support = 0, tech = 0, product = 0;
+            if (state.comments && Array.isArray(state.comments)) {
+                state.comments.forEach(c => {
+                    const intent = (c.intent || '').toLowerCase();
+                    if (supportKeys.some(k => intent.includes(k))) support++;
+                    else if (techKeys.some(k => intent.includes(k))) tech++;
+                    else if (productKeys.some(k => intent.includes(k))) product++;
+                    else support++;
+                });
+            }
+
+            container.innerHTML = `<div style="padding: 24px; border-radius: 12px; background: linear-gradient(135deg, rgba(59,130,246,0.1), transparent); border: 1px solid rgba(59,130,246,0.2); text-align: center;"><div style="font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px;">Support Queue</div><div style="font-size: 36px; font-weight: 900; color: #3b82f6;">${support}</div><div style="font-size: 12px; color: var(--muted); margin-top: 8px;">Help requests</div></div><div style="padding: 24px; border-radius: 12px; background: linear-gradient(135deg, rgba(139,92,246,0.1), transparent); border: 1px solid rgba(139,92,246,0.2); text-align: center;"><div style="font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px;">Tech Queue</div><div style="font-size: 36px; font-weight: 900; color: #8b5cf6;">${tech}</div><div style="font-size: 12px; color: var(--muted); margin-top: 8px;">Bugs & errors</div></div><div style="padding: 24px; border-radius: 12px; background: linear-gradient(135deg, rgba(16,185,129,0.1), transparent); border: 1px solid rgba(16,185,129,0.2); text-align: center;"><div style="font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px;">Product Queue</div><div style="font-size: 36px; font-weight: 900; color: #10b981;">${product}</div><div style="font-size: 12px; color: var(--muted); margin-top: 8px;">Feedback</div></div>`;
+        }
+
+        function renderRoutingRules(rules) {
+            const tbody = document.getElementById('routing-rules-table');
+            tbody.innerHTML = rules.map(rule => `<tr><td style="font-family: monospace; font-size: 12px;">${escapeHtml(rule.pattern)}</td><td><span class="badge badge-${rule.priority.toLowerCase()}">${rule.priority}</span></td><td><span class="status-indicator"><div class="status-dot${!rule.enabled ? ' error' : ''}"></div>${rule.enabled ? 'Active' : 'Inactive'}</span></td><td><button class="btn" onclick="deleteRule(${rule.id})" style="padding: 4px 8px; font-size: 12px;">Delete</button></td></tr>`).join('');
+        }
+
+        async function addRoutingRule() {
+            const pattern = document.getElementById('modal-pattern').value.trim();
+            const priority = document.getElementById('modal-priority').value;
+            if (!pattern) { alert('Pattern required'); return; }
+            try {
+                const rule = await api('/admin/rules/', {method: 'POST', body: JSON.stringify({pattern, priority, enabled: true})});
+                state.rules.push(rule);
+                renderRoutingRules(state.rules);
+                document.getElementById('rule-modal').classList.remove('active');
+                alert('Rule added');
+            } catch (e) { alert('Error'); }
+        }
+
+        async function deleteRule(id) {
+            if (!confirm('Delete?')) return;
+            try {
+                await api(`/admin/rules/${id}`, {method: 'DELETE'});
+                state.rules = state.rules.filter(r => r.id !== id);
+                renderRoutingRules(state.rules);
+            } catch (e) { alert('Error'); }
+        }
+
+        async function loadSenticTab() {
+            state.sentics = state.sentics || [];
+            renderSenticMappings(state.sentics);
+            renderEmotionChart();
+            try {
+                state.sentics = await api('/admin/sentics/');
+                renderSenticMappings(state.sentics);
+                renderEmotionChart();
+            } catch (e) { console.error('Sentic error:', e); }
+        }
+
+        function renderSenticMappings(mappings) {
+            const tbody = document.getElementById('sentic-mappings-table');
+            tbody.innerHTML = mappings.map(m => `<tr><td>${escapeHtml(m.emotion)}</td><td><span class="badge badge-${m.priority.toLowerCase()}">${m.priority}</span></td><td><button class="btn" onclick="deleteSentic(${m.id})" style="padding: 4px 8px; font-size: 12px;">Delete</button></td></tr>`).join('');
+        }
+
+        async function addSenticMapping() {
+            const emotion = document.getElementById('mapping-emotion').value.trim();
+            const priority = document.getElementById('mapping-priority').value;
+            if (!emotion) { alert('Emotion required'); return; }
+            try {
+                const mapping = await api('/admin/sentics/', {method: 'POST', body: JSON.stringify({emotion, priority})});
+                state.sentics.push(mapping);
+                renderSenticMappings(state.sentics);
+                document.getElementById('mapping-emotion').value = '';
+                alert('Mapping added');
+            } catch (e) { alert('Error'); }
+        }
+
+        async function deleteSentic(id) {
+            if (!confirm('Delete?')) return;
+            try {
+                await api(`/admin/sentics/${id}`, {method: 'DELETE'});
+                state.sentics = state.sentics.filter(s => s.id !== id);
+                renderSenticMappings(state.sentics);
+            } catch (e) { alert('Error'); }
+        }
+
+        function renderEmotionChart() {
+            const m = state.metrics;
+            if (!m || !m.sentiment_distribution) return;
+            const svg = document.getElementById('emotion-svg');
+            svg.innerHTML = '';
+            const data = m.sentiment_distribution.sort((a, b) => b.count - a.count);
+            const colors = ['#10b981', '#f97316', '#60a5fa', '#ef4444', '#a78bfa', '#94a3b8'];
+            const total = data.reduce((s, d) => s + d.count, 0);
+            let y = 20;
+            data.forEach((item, idx) => {
+                const pct = total ? (item.count / total * 100) : 0;
+                const barWidth = Math.max(20, pct * 3.2);
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', '10');
+                text.setAttribute('y', y + 5);
+                text.setAttribute('font-size', '12');
+                text.setAttribute('font-weight', '600');
+                text.setAttribute('fill', 'var(--text)');
+                text.textContent = item.emotion;
+                svg.appendChild(text);
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', '140');
+                rect.setAttribute('y', y - 10);
+                rect.setAttribute('width', barWidth);
+                rect.setAttribute('height', '18');
+                rect.setAttribute('fill', colors[idx % colors.length]);
+                rect.setAttribute('rx', '4');
+                svg.appendChild(rect);
+                const countText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                countText.setAttribute('x', 140 + barWidth + 10);
+                countText.setAttribute('y', y + 5);
+                countText.setAttribute('font-size', '12');
+                countText.setAttribute('font-weight', '700');
+                countText.setAttribute('fill', 'var(--text)');
+                countText.textContent = `${item.count} (${Math.round(pct)}%)`;
+                svg.appendChild(countText);
+                y += 35;
+            });
+        }
+
+        async function loadConfigTab() {
+            // Set defaults first
+            document.getElementById('cfg-force-local').checked = false;
+            document.getElementById('cfg-confidence').value = 0.5;
+            document.getElementById('cfg-confidence-value').textContent = '0.5';
+            try {
+                const config = await api('/admin/config/');
+                state.config = config;
+                document.getElementById('cfg-force-local').checked = !!config.force_local;
+                document.getElementById('cfg-confidence').value = config.confidence || 0.5;
+                document.getElementById('cfg-confidence-value').textContent = (config.confidence || 0.5);
+                document.getElementById('cfg-logging').checked = config.logging !== false;
+                document.getElementById('cfg-auto-ticket').checked = config.auto_ticket !== false;
+                
+                // Load API configs
+                await loadAPIList();
+            } catch (e) { 
+                console.error('Config error:', e);
+                // Set empty API list on error
+                const container = document.getElementById('api-list');
+                if (container) container.innerHTML = '<div style="padding: 16px; color: var(--muted); text-align: center;">No API configs available</div>';
+            }
+        }
+
+        async function loadAPIList() {
+            try {
+                const apis = await api('/admin/api-configs/');
+                const container = document.getElementById('api-list');
+                container.innerHTML = '';
+                
+                if (!apis || apis.length === 0) {
+                    container.innerHTML = '<div style="color: var(--muted); text-align: center; padding: 20px;">No APIs configured yet</div>';
+                    return;
+                }
+                
+                apis.forEach(api_config => {
+                    const item = document.createElement('div');
+                    item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--hover); border-radius: 6px; border-left: 3px solid ' + (api_config.test_status === 'success' ? '#10b981' : api_config.test_status === 'failed' ? '#ef4444' : '#6b7280');
+                    item.innerHTML = `
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--text);">${api_config.provider}</div>
+                            <div style="font-size: 12px; color: var(--muted);">
+                                ${api_config.name} ${api_config.model_name ? '• ' + api_config.model_name : ''}
+                            </div>
+                            ${api_config.last_tested ? `<div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Last tested: ${new Date(api_config.last_tested).toLocaleString()}</div>` : ''}
+                        </div>
+                        <div style="display: flex; gap: 6px; margin-left: 12px;">
+                            <button class="btn" style="padding: 6px 8px; font-size: 12px;" onclick="testAPI(${api_config.id})">🧪 Test</button>
+                            <button class="btn" style="padding: 6px 8px; font-size: 12px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" onclick="deleteAPI(${api_config.id})">✕ Delete</button>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (e) {
+                console.error('Error loading APIs:', e);
+                document.getElementById('api-list').innerHTML = '<div style="color: #ef4444;">Error loading APIs</div>';
+            }
+        }
+
+        async function addNewAPI() {
+            const name = document.getElementById('api-name').value.trim();
+            const provider = document.getElementById('api-provider').value.trim();
+            const apiKey = document.getElementById('api-key').value.trim();
+            const apiUrl = document.getElementById('api-url').value.trim();
+            const modelName = document.getElementById('api-model').value.trim();
+            
+            if (!name || !provider || !apiKey) {
+                alert('Please fill in: Name, Provider, and API Key');
+                return;
+            }
+            
+            document.getElementById('btn-add-api').disabled = true;
+            
+            try {
+                const payload = {
+                    name,
+                    provider,
+                    api_key: apiKey,
+                };
+                if (apiUrl) payload.api_url = apiUrl;
+                if (modelName) payload.model_name = modelName;
+                
+                await api('/admin/api-configs/', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                // Clear form
+                document.getElementById('api-name').value = '';
+                document.getElementById('api-provider').value = '';
+                document.getElementById('api-key').value = '';
+                document.getElementById('api-url').value = '';
+                document.getElementById('api-model').value = '';
+                
+                // Reload list
+                await loadAPIList();
+                alert('API added successfully!');
+            } catch (error) {
+                alert('Error adding API: ' + error.message);
+            } finally {
+                document.getElementById('btn-add-api').disabled = false;
+            }
+        }
+
+        async function testAPI(configId) {
+            try {
+                const result = await api(`/admin/api-configs/${configId}/test`, {method: 'POST'});
+                alert(`${result.provider} API: ${result.status.toUpperCase()}\n${result.message}`);
+                await loadAPIList();
+            } catch (error) {
+                alert('Error testing API: ' + error.message);
+            }
+        }
+
+        async function deleteAPI(configId) {
+            if (!confirm('Delete this API configuration?')) return;
+            
+            try {
+                await api(`/admin/api-configs/${configId}`, {method: 'DELETE'});
+                await loadAPIList();
+                alert('API deleted');
+            } catch (error) {
+                alert('Error deleting API: ' + error.message);
+            }
+        }
+
+        async function saveConfig() {
+            const config = {force_local: document.getElementById('cfg-force-local').checked, confidence: parseFloat(document.getElementById('cfg-confidence').value), logging: document.getElementById('cfg-logging').checked, auto_ticket: document.getElementById('cfg-auto-ticket').checked};
+            try {
+                await api('/admin/config/', {method: 'POST', body: JSON.stringify(config)});
+                state.config = config;
+                alert('Saved');
+            } catch (e) { alert('Error'); }
+        }
+
+        async function analyzeComment() {
+            const content = document.getElementById('test-input').value.trim();
+            if (!content) { alert('Enter text'); return; }
+            document.getElementById('btn-analyze').disabled = true;
+            try {
+                const result = await api('/ai/analyze/', {method: 'POST', body: JSON.stringify({content, source: 'test'})});
+                document.getElementById('test-result').style.display = 'block';
+                document.getElementById('result-emotion').textContent = result.emotion || '—';
+                document.getElementById('result-intent').textContent = result.intent || '—';
+                document.getElementById('result-priority').textContent = result.priority || '—';
+                document.getElementById('result-confidence').textContent = `${Math.round((result.confidence || 0) * 100)}%`;
+                document.getElementById('result-response').textContent = result.suggested_response || '(No suggestion)';
+            } catch (e) { alert('Error'); }
+            finally { document.getElementById('btn-analyze').disabled = false; }
+        }
+
+        async function queueComment() {
+            const content = document.getElementById('test-input').value.trim();
+            if (!content) { alert('Enter text'); return; }
+            try {
+                const comment = await api('/comments/', {method: 'POST', body: JSON.stringify({content, source: 'dashboard'})});
+                state.comments.unshift(comment);
+                addQueueItem(comment);
+                document.getElementById('test-input').value = '';
+                alert('Added');
+            } catch (e) { alert('Error'); }
+        }
+
+        function addQueueItem(comment) {
+            const container = document.getElementById('test-queue');
+            if (!container.children.length || !container.querySelector('.list-item')) container.innerHTML = '';
+            const item = document.createElement('div');
+            item.className = 'list-item';
+            item.innerHTML = `<div><div class="list-item-title">${escapeHtml(comment.content.substring(0, 50))}...</div><div class="list-item-meta">${comment.intent || '—'} • ${Math.round((comment.confidence || 0) * 100)}%</div></div><span class="badge badge-${comment.priority.toLowerCase()}">${comment.priority}</span>`;
+            container.prepend(item);
+        }
+
+        // Store scraped comments for later use
+        let scrapedComments = [];
+
+        async function scrapeUrl() {
+            const url = document.getElementById('url-input').value.trim();
+            const context = document.getElementById('url-context').value.trim();
+
+            if (!url) {
+                alert('Enter a URL');
+                return;
+            }
+
+            // Show loading state
+            document.getElementById('scrape-loading').style.display = 'block';
+            document.getElementById('scrape-result').style.display = 'none';
+            document.getElementById('scrape-error').style.display = 'none';
+            document.getElementById('btn-scrape-url').disabled = true;
+
+            try {
+                const result = await api('/ai/scrape-url/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        url: url,
+                        context: context || undefined
+                    })
+                });
+
+                if (!result.success) {
+                    document.getElementById('scrape-error').style.display = 'block';
+                    document.getElementById('scrape-error').textContent = result.error || 'Failed to scrape URL';
+                    document.getElementById('scrape-loading').style.display = 'none';
+                    return;
+                }
+
+                if (!result.comments || result.comments.length === 0) {
+                    document.getElementById('scrape-error').style.display = 'block';
+                    document.getElementById('scrape-error').textContent = 'No comments found on this page';
+                    document.getElementById('scrape-loading').style.display = 'none';
+                    return;
+                }
+
+                // Store comments for later
+                scrapedComments = result.comments;
+
+                // Display results
+                const container = document.getElementById('scrape-comments');
+                container.innerHTML = '';
+
+                result.comments.forEach((comment, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `
+                        <div style="flex: 1;">
+                            <div class="list-item-title">${escapeHtml(comment.text.substring(0, 80))}${comment.text.length > 80 ? '...' : ''}</div>
+                            <div class="list-item-meta">
+                                ${comment.source ? `Source: ${comment.source}` : ''}
+                                ${comment.author ? ` • By: ${comment.author}` : ''}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+
+                document.getElementById('scrape-count').textContent = `${result.comments.length} comments`;
+                document.getElementById('scrape-result').style.display = 'block';
+                document.getElementById('scrape-loading').style.display = 'none';
+
+            } catch (error) {
+                console.error('Error scraping URL:', error);
+                document.getElementById('scrape-error').style.display = 'block';
+                document.getElementById('scrape-error').textContent = `Error: ${error.message || 'Failed to scrape URL'}`;
+                document.getElementById('scrape-loading').style.display = 'none';
+            } finally {
+                document.getElementById('btn-scrape-url').disabled = false;
+            }
+        }
+
+        function clearScrapeScrape() {
+            document.getElementById('url-input').value = '';
+            document.getElementById('url-context').value = '';
+            document.getElementById('scrape-result').style.display = 'none';
+            document.getElementById('scrape-error').style.display = 'none';
+            document.getElementById('scrape-loading').style.display = 'none';
+            scrapedComments = [];
+        }
+
+        async function addScrapedToQueue() {
+            if (scrapedComments.length === 0) {
+                alert('No comments to add');
+                return;
+            }
+
+            document.getElementById('btn-add-scraped').disabled = true;
+            try {
+                let added = 0;
+                for (const comment of scrapedComments) {
+                    try {
+                        await api('/comments/', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                content: comment.text,
+                                source: `web_scrape:${comment.source || 'unknown'}`
+                            })
+                        });
+                        added++;
+                    } catch (e) {
+                        console.error('Failed to add comment:', e);
+                    }
+                }
+
+                alert(`Added ${added}/${scrapedComments.length} comments to analysis queue`);
+                clearScrapeScrape();
+            } catch (error) {
+                alert('Error adding comments: ' + error.message);
+            } finally {
+                document.getElementById('btn-add-scraped').disabled = false;
+            }
+        }
+
+        async function loadInbox() {
+            const container = document.getElementById('inbox-list');
+            if (!container) return;
+            
+            try {
+                const comments = await api('/comments/?limit=100');
+                const tickets = await api('/tickets');
+                const ticketMap = {};
+                tickets.forEach(t => { ticketMap[t.comment_id] = t; });
+                const filter = document.getElementById('inbox-filter').value;
+                let filtered = comments;
+                if (filter === 'critical') filtered = comments.filter(c => c.priority === 'Critical');
+                if (filter === 'high') filtered = comments.filter(c => c.priority === 'High');
+                if (filter === 'no-ticket') filtered = comments.filter(c => !ticketMap[c.id]);
+                container.innerHTML = filtered.map(c => {
+                    const ticket = ticketMap[c.id];
+                    return `<div class="list-item"><div style="flex: 1;"><div class="list-item-title">${escapeHtml(c.content.substring(0, 80))}...</div><div class="list-item-meta">${c.emotion || '—'} • ${c.intent || '—'} • ${new Date(c.created_at).toLocaleDateString()}</div>${ticket ? `<div class="list-item-meta" style="color: #10b981;">✓ Ticket #${ticket.id}</div>` : ''}</div><span class="badge badge-${c.priority.toLowerCase()}">${c.priority}</span><div class="list-item-actions">${!ticket ? `<button class="btn" onclick="createTicket(${c.id})" style="padding: 4px 8px; font-size: 12px;">Create</button>` : ''}</div></div>`;
+                }).join('');
+                if (!filtered.length) container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No comments</p></div>';
+            } catch (e) { 
+                console.error('Inbox error:', e);
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Unable to load inbox</p></div>';
+            }
+        }
+
+        async function createTicket(commentId) {
+            try {
+                const comment = state.comments.find(c => c.id === commentId);
+                if (comment) await api('/tickets/', {method: 'POST', body: JSON.stringify({comment_id: commentId, title: (comment.intent || 'Issue').substring(0, 50), description: comment.content.substring(0, 500), priority: comment.priority})});
+                alert('Created');
+                loadInbox();
+            } catch (e) { alert('Error'); }
+        }
+
+        // ===== BULK OPERATIONS =====
+        async function bulkCreateTickets() {
+            const selected = Array.from(document.querySelectorAll('.comment-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
+            if (selected.length === 0) { alert('Select comments first'); return; }
+            
+            try {
+                for (const cid of selected) {
+                    const c = state.comments.find(x => x.id === cid);
+                    if (c && !c.ticket_id) {
+                        await api('/tickets/', {method: 'POST', body: JSON.stringify({comment_id: cid, title: (c.intent || 'Issue').substring(0, 50), description: c.content.substring(0, 500), priority: c.priority})});
+                    }
+                }
+                alert(`✓ Created tickets for ${selected.length} comments`);
+                document.querySelectorAll('.comment-checkbox').forEach(cb => cb.checked = false);
+                updateBulkToolbar();
+                applyCommentFilters();
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        async function bulkSetPriority() {
+            const priority = prompt('Set priority to (Low/Medium/High/Critical):');
+            if (!priority) return;
+            if (!['Low', 'Medium', 'High', 'Critical'].includes(priority)) { alert('Invalid priority'); return; }
+            
+            const selected = Array.from(document.querySelectorAll('.comment-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
+            try {
+                for (const cid of selected) {
+                    const c = state.comments.find(x => x.id === cid);
+                    if (c) c.priority = priority;
+                }
+                alert(`✓ Updated priority for ${selected.length} comments to ${priority}`);
+                applyCommentFilters();
+            } catch (e) { alert('Error'); }
+        }
+
+        async function bulkDelete() {
+            if (!confirm('Delete selected comments? This cannot be undone.')) return;
+            
+            const selected = Array.from(document.querySelectorAll('.comment-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
+            try {
+                for (const cid of selected) {
+                    try {
+                        await api(`/comments/${cid}`, {method: 'DELETE'});
+                    } catch (e) { console.error(e); }
+                }
+                state.comments = state.comments.filter(c => !selected.includes(c.id));
+                alert(`✓ Deleted ${selected.length} comments`);
+                applyCommentFilters();
+            } catch (e) { alert('Error'); }
+        }
+
+        // ===== RESPONSE TEMPLATES =====
+        let templates = [];
+
+        async function loadTemplates() {
+            try {
+                templates = await api('/admin/templates');
+                renderTemplateList();
+            } catch (e) {
+                console.error('Error loading templates:', e);
+            }
+        }
+
+        function renderTemplateList() {
+            const container = document.getElementById('template-list');
+            if (!templates.length) {
+                container.innerHTML = '<p style="color: var(--muted); text-align: center;">No templates yet</p>';
+                return;
+            }
+            
+            container.innerHTML = templates.map(t => `
+                <div class="list-item">
+                    <div style="flex: 1;">
+                        <div class="list-item-title">${escapeHtml(t.name || 'Unnamed')}</div>
+                        <div class="list-item-meta">${escapeHtml((t.content || '').substring(0, 60))}...</div>
+                    </div>
+                    <div class="list-item-actions">
+                        <button class="btn" onclick="useTemplate(${t.id})" style="padding: 4px 8px; font-size: 12px;">Use</button>
+                        <button class="btn" onclick="deleteTemplate(${t.id})" style="padding: 4px 8px; font-size: 12px; color: #ef4444;">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function saveTemplate() {
+            const name = prompt('Template name (e.g., "Angry Customer Response"):');
+            if (!name) return;
+            
+            const content = document.getElementById('template-content').value.trim();
+            if (!content) { alert('Enter template content'); return; }
+            
+            try {
+                const template = await api('/admin/templates', {method: 'POST', body: JSON.stringify({name, content})});
+                templates.push(template);
+                renderTemplateList();
+                document.getElementById('template-content').value = '';
+                alert('✓ Template saved');
+            } catch (e) { alert('Error'); }
+        }
+
+        async function useTemplate(templateId) {
+            const t = templates.find(x => x.id === templateId);
+            if (t) {
+                const response = t.content;
+                const selected = document.querySelector('.comment-checkbox:checked');
+                if (selected) {
+                    alert(`✓ Template ready. You can now respond with:\n\n"${response}"`);
+                } else {
+                    alert(`Template content:\n\n${response}`);
+                }
+            }
+        }
+
+        async function deleteTemplate(templateId) {
+            if (!confirm('Delete this template?')) return;
+            
+            try {
+                await api(`/admin/templates/${templateId}`, {method: 'DELETE'});
+                templates = templates.filter(t => t.id !== templateId);
+                renderTemplateList();
+                alert('✓ Deleted');
+            } catch (e) { alert('Error'); }
+        }
+
+        // ===== ACTIVITY LOG =====
+        async function loadActivityLog() {
+            try {
+                const logs = await api('/admin/activity-log?limit=100');
+                renderActivityLog(logs);
+            } catch (e) { console.error('Error loading activity log:', e); }
+        }
+
+        function renderActivityLog(logs) {
+            const container = document.getElementById('activity-timeline');
+            if (!logs || !logs.length) {
+                container.innerHTML = '<p style="color: var(--muted); text-align: center;">No activity yet</p>';
+                return;
+            }
+            
+            container.innerHTML = logs.map(log => {
+                const date = new Date(log.timestamp);
+                const time = date.toLocaleTimeString();
+                const icons = {
+                    'create': '✨', 'update': '✏️', 'delete': '🗑️',
+                    'export': '📥', 'filter': '🔍', 'bulk': '⚡'
+                };
+                const icon = icons[log.action_type] || '•';
+                
+                return `
+                    <div style="padding: 12px; border-left: 3px solid var(--accent); margin-bottom: 8px; background: var(--hover); border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 18px;">${icon}</span>
+                                <span style="font-weight: 600; margin-left: 8px;">${log.action_type}</span>
+                            </div>
+                            <span style="font-size: 12px; color: var(--muted);">${time}</span>
+                        </div>
+                        <div style="font-size: 13px; margin-top: 4px; color: var(--muted);">${log.description || log.resource_type}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ===== ANALYTICS CHARTS =====
+        function renderSentimentTrend() {
+            const container = document.getElementById('sentiment-trend-chart');
+            if (!container) return;
+            
+            // Generate sample 7-day trend
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const data = [45, 52, 48, 61, 55, 58, 65];
+            const max = 100;
+            
+            let html = '<div style="display: flex; align-items: flex-end; gap: 8px; height: 200px; justify-content: space-around;">';
+            data.forEach((d, i) => {
+                const h = (d / max) * 180;
+                html += `<div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <div style="width: 30px; height: ${h}px; background: linear-gradient(180deg, #10b981, #6ee7b7); border-radius: 4px 4px 0 0;"></div>
+                    <div style="font-size: 11px; color: var(--muted);">${d}%</div>
+                    <div style="font-size: 11px;">${days[i]}</div>
+                </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderResponseRate() {
+            const container = document.getElementById('response-rate-metric');
+            if (!container) return;
+            
+            const withTickets = state.comments.filter(c => c.ticket_id).length;
+            const rate = state.comments.length ? Math.round((withTickets / state.comments.length) * 100) : 0;
+            
+            container.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 36px; font-weight: 900; color: var(--accent);">${rate}%</div>
+                    <div style="color: var(--muted); margin-top: 8px;">${withTickets} of ${state.comments.length} comments addressed</div>
+                </div>
+            `;
+        }
+
+        // ===== EXPORT FUNCTIONALITY =====
+        async function exportCommentsToCSV() {
+            try {
+                const comments = state.comments || [];
+                const csv = [
+                    ['ID', 'Customer', 'Content', 'Emotion', 'Intent', 'Priority', 'Confidence', 'Date'],
+                    ...comments.map(c => [
+                        c.id,
+                        c.customer_name || '',
+                        c.content || '',
+                        c.emotion || '',
+                        c.intent || '',
+                        c.priority || '',
+                        Math.round((c.confidence || 0) * 100),
+                        new Date(c.created_at).toISOString()
+                    ])
+                ].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+                
+                const blob = new Blob([csv], {type: 'text/csv'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `acas-comments-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                alert(`✓ Exported ${comments.length} comments to CSV`);
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        function exportCommentsToJSON() {
+            try {
+                const data = {
+                    exported_at: new Date().toISOString(),
+                    total_count: state.comments.length,
+                    comments: state.comments
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `acas-comments-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                alert(`✓ Exported ${state.comments.length} comments to JSON`);
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        // Check authentication first
+        if (!checkAuth()) {
+            throw new Error('Not authenticated');
+        }
+
+        // Apply theme and init
+        if (state.theme === 'light') document.body.classList.add('light');
+        
+        // Call init immediately and also on DOMContentLoaded as fallback
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker
+                    .register('/frontend/service-worker.js')
+                    .then((registration) => {
+                        console.log('[PWA] Service Worker registered successfully:', registration);
+                        
+                        // Check for updates periodically (every hour)
+                        setInterval(() => {
+                            registration.update();
+                        }, 1000 * 60 * 60);
+                    })
+                    .catch((error) => {
+                        console.error('[PWA] Service Worker registration failed:', error);
+                    });
+            });
+        } else {
+            console.warn('[PWA] Service Workers not supported in this browser');
+        }
+
+        // Handle app installation
+        window.addEventListener('beforeinstallprompt', (event) => {
+            console.log('[PWA] App install prompt triggered');
+            window.deferredInstallPrompt = event;
+        });
+
+        // Detect standalone mode
+        if (window.navigator.standalone === true) {
+            console.log('[PWA] App running in standalone mode');
+            document.documentElement.classList.add('app-standalone');
+        }
+
+        // Register background sync
+        if ('serviceWorker' in navigator && 'SyncManager' in window) {
+            navigator.serviceWorker.ready.then((registration) => {
+                console.log('[PWA] Background sync available');
+                // Use when needed: registration.sync.register('sync-comments');
+            });
+        }
+
+        // Listen for app events
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('[PWA] App moved to background');
+            } else {
+                console.log('[PWA] App moved to foreground');
+            }
+        });
+
+        // Handle iOS fullscreen mode
+        function enterIPadFullscreen() {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {
+                    console.log('Fullscreen request denied');
+                });
+            }
+        }
+
+        // Safe scroll
+        document.addEventListener('touchmove', (e) => {
+            // Allow scrolling but prevent rubber-band effect
+            if (e.target.closest('.scrollable')) return;
+        });
+    </script>
+</body>
+</html>

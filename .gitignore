@@ -1,0 +1,30 @@
+# Secrets
+.env
+*.env
+!.env.example
+!.env(1).example
+
+# Environments / dependencies
+.venv/
+venv/
+node_modules/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+build/
+dist/
+
+# Local databases
+*.db
+*.sqlite3
+
+# Logs / output
+*.log
+*.err
+pytest_output.txt
+installed.txt
+
+# Archives (too large for GitHub)
+*.rar
