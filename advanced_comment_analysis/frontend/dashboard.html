@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACAS Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        
+        :root {
+            --bg: #0b0b0b;
+            --panel: #1a0f0f;
+            --text: #f8f8f8;
+            --accent: #dc2626;
+            --border: rgba(255,255,255,0.03);
+            --hover: rgba(255,255,255,0.02);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, rgba(26,15,15,0.95), rgba(26,15,15,0.98));
+            border-right: 1px solid var(--border);
+            padding: 20px 0;
+            overflow-y: auto;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #888;
+            letter-spacing: 1px;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            color: #888;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: var(--hover);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(220,38,38,0.15), transparent);
+            color: var(--accent);
+            border-left-color: var(--accent);
+        }
+
+        .main {
+            margin-left: 250px;
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background: var(--hover);
+            border-color: rgba(220,38,38,0.2);
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+        }
+
+        .btn.primary:hover {
+            background: #b91c1c;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: var(--hover);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: rgba(220,38,38,0.2);
+            box-shadow: 0 10px 30px rgba(220,38,38,0.05);
+        }
+
+        .card h2 {
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .card h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .grid {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+        .kpi {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .kpi:hover {
+            border-color: rgba(220,38,38,0.3);
+            transform: translateY(-2px);
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        .kpi-trend {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .kpi-trend.positive {
+            background: rgba(16,185,129,0.15);
+            color: #10b981;
+        }
+
+        .kpi-trend.negative {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        thead {
+            border-bottom: 2px solid var(--border);
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #888;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        tr:hover { background: var(--hover); }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-critical { background: #7f1d1d; color: #fecaca; }
+        .badge-high { background: #7c2d12; color: #fed7aa; }
+        .badge-medium { background: #78350f; color: #fef08a; }
+        .badge-low { background: #064e3b; color: #a7f3d0; }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--hover);
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--panel);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            padding: 6px 12px;
+            background: var(--hover);
+            border-radius: 6px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+            .main {
+                margin-left: 0;
+                padding: 20px;
+            }
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+            .grid-3 { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">DASHBOARD</div>
+            </div>
+            <div class="nav-item active" data-tab="live">📊 Live Dashboard</div>
+            <div class="nav-item" data-tab="routing">⚙️ Auto Routing</div>
+            <div class="nav-item" data-tab="sentic">🔎 Sentic Mapping</div>
+            <div class="nav-item" data-tab="config">🔧 Configuration</div>
+            <div class="nav-item" data-tab="test">🧪 Test</div>
+            <div class="nav-item" data-tab="inbox">📥 Inbox</div>
+            <div style="padding: 0 20px; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>System Online</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main">
+            <header>
+                <div class="logo">◈ ACAS</div>
+                <div class="controls">
+                    <div class="user-info">
+                        <div>
+                            <div id="username">User</div>
+                            <div style="font-size: 11px; color: #888; text-transform: capitalize;">
+                                <span id="role">user</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn" id="logout-btn">Logout</button>
+                    <select id="language-select" class="btn">
+                        <option value="en">English</option>
+                        <option value="ar">العربية</option>
+                    </select>
+                    <button class="btn" id="theme-btn">🌙</button>
+                </div>
+            </header>
+
+            <!-- Live Dashboard -->
+            <div id="tab-live" class="tab-panel active">
+                <div class="grid grid-4">
+                    <div class="kpi">
+                        <div class="kpi-label">Analyzed (24h)</div>
+                        <div class="kpi-value" id="kpi-total">250</div>
+                        <div class="kpi-trend positive">▲ +12%</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Crisis Alerts</div>
+                        <div class="kpi-value" id="kpi-crisis">60</div>
+                        <div class="kpi-trend negative">▼ -5</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Avg. Confidence</div>
+                        <div class="kpi-value" id="kpi-confidence">82%</div>
+                        <div class="kpi-trend positive">▲ +0.8%</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Noise Filtered</div>
+                        <div class="kpi-value" id="kpi-noise">24%</div>
+                        <div class="kpi-trend positive">▲ +2.1%</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>⚡ Sentiment Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="sentiment-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>🤖 Priority Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="priority-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>🔍 Comments Manager</h2>
+                    <div class="grid grid-4" style="margin-bottom: 16px;">
+                        <input type="text" id="search-comments" placeholder="Search..." />
+                        <select id="filter-emotion">
+                            <option value="">All Emotions</option>
+                            <option value="joy">Joy</option>
+                            <option value="anger">Anger</option>
+                            <option value="frustration">Frustration</option>
+                            <option value="sadness">Sadness</option>
+                        </select>
+                        <select id="filter-priority">
+                            <option value="">All Priorities</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                        <div>
+                            <button class="btn primary" id="apply-filters" style="width: 100%;">Apply Filters</button>
+                        </div>
+                    </div>
+
+                    <table id="comments-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;"><input type="checkbox" id="select-all" /></th>
+                                <th>Customer</th>
+                                <th>Comment</th>
+                                <th>Emotion</th>
+                                <th>Priority</th>
+                                <th>Confidence</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comments-body">
+                            <tr><td colspan="7" class="empty-state">Loading comments...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h2>⚡ Priority Triage Queue</h2>
+                    <table id="triage-table">
+                        <thead>
+                            <tr>
+                                <th>User/Source</th>
+                                <th>Comment</th>
+                                <th>Emotion</th>
+                                <th>Priority</th>
+                                <th>Confidence</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="triage-body">
+                            <tr><td colspan="6" class="empty-state">Loading triage items...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Auto Routing -->
+            <div id="tab-routing" class="tab-panel">
+                <div class="grid grid-3">
+                    <div class="kpi">
+                        <div class="kpi-label">Total Routed</div>
+                        <div class="kpi-value" id="routing-total">0</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Active Rules</div>
+                        <div class="kpi-value" id="routing-rules-count">0</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Success Rate</div>
+                        <div class="kpi-value">100%</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h2 style="margin: 0;">Routing Rules</h2>
+                        <button class="btn primary" id="add-rule-btn">+ Add Rule</button>
+                    </div>
+                    <table id="rules-table">
+                        <thead>
+                            <tr>
+                                <th>Pattern</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rules-body">
+                            <tr><td colspan="4" class="empty-state">Loading routing rules...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sentic Mapping -->
+            <div id="tab-sentic" class="tab-panel">
+                <div class="card">
+                    <h2>Emotion to Priority Mappings</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                        <input type="text" id="mapping-emotion" placeholder="e.g., angry, frustrated" />
+                        <select id="mapping-priority">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                    <button class="btn primary" id="add-mapping-btn" style="width: 100%; margin-bottom: 20px;">Save Mapping</button>
+
+                    <table id="mappings-table">
+                        <thead>
+                            <tr>
+                                <th>Emotion</th>
+                                <th>Maps To</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mappings-body">
+                            <tr><td colspan="3" class="empty-state">Loading mappings...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h3>Emotion Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="emotion-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration -->
+            <div id="tab-config" class="tab-panel">
+                <div class="card">
+                    <h2>System Configuration</h2>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="cfg-force-local" checked /> Force Local AI (No API Calls)
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Confidence Threshold</label>
+                        <input type="range" id="cfg-confidence" min="0" max="1" step="0.05" value="0.5" />
+                        <small id="confidence-value">0.50</small>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="cfg-logging" checked /> Enable Logging
+                        </label>
+                    </div>
+                    <button class="btn primary" id="save-config-btn" style="width: 100%;">Save Configuration</button>
+                </div>
+
+                <div class="card">
+                    <h2>🔑 API Key Management</h2>
+                    <input type="text" id="api-name" placeholder="API Name" style="margin-bottom: 8px;" />
+                    <input type="password" id="api-key" placeholder="API Key" style="margin-bottom: 8px;" />
+                    <input type="text" id="api-provider" placeholder="Provider" style="margin-bottom: 8px;" />
+                    <button class="btn primary" id="add-api-btn" style="width: 100%;">➕ Add API</button>
+                    <div id="api-list" style="margin-top: 16px;"></div>
+                </div>
+            </div>
+
+            <!-- Test -->
+            <div id="tab-test" class="tab-panel">
+                <div class="card">
+                    <h2>Test AI Analysis</h2>
+                    <textarea id="test-input" placeholder="Enter customer comment..." style="height: 100px; margin-bottom: 12px;"></textarea>
+                    <div class="btn-group">
+                        <button class="btn primary" id="analyze-btn" onclick="analyzeText()">🚀 Analyze</button>
+                        <button class="btn" id="add-queue-btn">➕ Add to Queue</button>
+                    </div>
+                    <div id="test-result" style="display: none; margin-top: 20px; padding: 16px; background: var(--hover); border-radius: 6px; border-left: 4px solid var(--accent);">
+                        <h3>Analysis Result</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-top: 12px;">
+                            <div>
+                                <div style="font-size: 11px; color: #888;">EMOTION</div>
+                                <div id="result-emotion" style="font-weight: 700;">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; color: #888;">INTENT</div>
+                                <div id="result-intent" style="font-weight: 700;">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; color: #888;">PRIORITY</div>
+                                <div id="result-priority" style="font-weight: 700;">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; color: #888;">CONFIDENCE</div>
+                                <div id="result-confidence" style="font-weight: 700;">—</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Recent Analyses</h2>
+                    <div id="test-queue" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+            </div>
+
+            <!-- Inbox -->
+            <div id="tab-inbox" class="tab-panel">
+                <div class="card">
+                    <h2>Inbox</h2>
+                    <button class="btn" id="refresh-inbox-btn" style="margin-bottom: 16px;">🔄 Refresh</button>
+                    <div id="inbox-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="rule-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Routing Rule</h2>
+                <button class="modal-close" onclick="closeModal('rule-modal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Pattern</label>
+                <input type="text" id="rule-pattern" placeholder="e.g., refund|bug" />
+            </div>
+            <div class="form-group">
+                <label>Priority</label>
+                <select id="rule-priority">
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                </select>
+            </div>
+            <button class="btn primary" id="save-rule-btn" style="width: 100%;">Save</button>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:8000';
+        let allComments = [];
+        let allTickets = [];
+        let charts = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            setupNav();
+            setupEventListeners();
+            loadData();
+            updateCharts();
+        });
+
+        function checkAuth() {
+            const user = localStorage.getItem('user_id');
+            if (!user) {
+                window.location.href = '/frontend/login.html';
+            } else {
+                document.getElementById('username').textContent = localStorage.getItem('username') || 'User';
+                document.getElementById('role').textContent = localStorage.getItem('role') || 'user';
+            }
+        }
+
+        function setupNav() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    document.querySelectorAll('.tab-panel').forEach(t => t.classList.remove('active'));
+                    
+                    const tab = item.getAttribute('data-tab');
+                    item.classList.add('active');
+                    document.getElementById(`tab-${tab}`).classList.add('active');
+                });
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('logout-btn').addEventListener('click', logout);
+            document.getElementById('apply-filters').addEventListener('click', applyFilters);
+            document.getElementById('analyze-btn').addEventListener('click', () => analyzeText());
+            document.getElementById('add-rule-btn').addEventListener('click', () => openModal('rule-modal'));
+            document.getElementById('save-rule-btn').addEventListener('click', saveRule);
+            document.getElementById('add-mapping-btn').addEventListener('click', addMapping);
+            document.getElementById('save-config-btn').addEventListener('click', saveConfig);
+            document.getElementById('add-api-btn').addEventListener('click', addAPI);
+            document.getElementById('refresh-inbox-btn').addEventListener('click', loadInbox);
+        }
+
+        async function api(path, options = {}) {
+            const token = localStorage.getItem('auth_token');
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            };
+            try {
+                const res = await fetch(API + path, { headers, ...options });
+                if (res.status === 401) {
+                    localStorage.clear();
+                    window.location.href = '/frontend/login.html';
+                    return null;
+                }
+                return await res.json();
+            } catch (err) {
+                console.error('API Error:', err);
+                return null;
+            }
+        }
+
+        async function loadData() {
+            // Load comments
+            const comments = await api('/comments/');
+            if (comments && Array.isArray(comments)) {
+                allComments = comments;
+            } else if (comments && Array.isArray(comments.data)) {
+                allComments = comments.data;
+            } else if (comments && typeof comments === 'object') {
+                allComments = Object.values(comments).filter(item => item && typeof item === 'object');
+            } else {
+                allComments = [];
+            }
+            renderComments();
+            renderTriageQueue();
+
+            // Load rules
+            const rules = await api('/admin/rules/');
+            if (rules && Array.isArray(rules)) {
+                renderRules(rules);
+            } else if (rules && Array.isArray(rules.data)) {
+                renderRules(rules.data);
+            }
+
+            // Load mappings
+            const mappings = await api('/admin/sentics/');
+            if (mappings && Array.isArray(mappings)) {
+                renderMappings(mappings);
+            } else if (mappings && Array.isArray(mappings.data)) {
+                renderMappings(mappings.data);
+            }
+
+            // Update KPIs
+            updateKPIs();
+        }
+
+        function renderComments() {
+            const tbody = document.getElementById('comments-body');
+            if (!Array.isArray(allComments) || allComments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No comments found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allComments.slice(0, 50).map(c => `
+                <tr>
+                    <td><input type="checkbox" /></td>
+                    <td>${c.customer_name || c.source || 'Unknown'}</td>
+                    <td>${(c.content || '').substring(0, 50)}...</td>
+                    <td>${c.emotion || '—'}</td>
+                    <td><span class="badge badge-${(c.priority || 'low').toLowerCase()}">${c.priority || 'Low'}</span></td>
+                    <td>${Math.round((c.confidence || 0) * 100)}%</td>
+                    <td>
+                        <button class="btn" style="font-size: 11px; padding: 4px 8px;">View</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTriageQueue() {
+            const tbody = document.getElementById('triage-body');
+            const comments = Array.isArray(allComments) ? allComments : [];
+            const triage = comments.filter(c => c.priority === 'High' || c.priority === 'Critical').slice(0, 20);
+            
+            if (triage.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No urgent items</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = triage.map(c => `
+                <tr>
+                    <td>${c.customer_name || c.source}</td>
+                    <td>${(c.content || '').substring(0, 40)}...</td>
+                    <td>${c.emotion}</td>
+                    <td><span class="badge badge-${(c.priority || 'low').toLowerCase()}">${c.priority}</span></td>
+                    <td>${Math.round((c.confidence || 0) * 100)}%</td>
+                    <td><button class="btn" style="font-size: 11px;">Action</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderRules(rules) {
+            const tbody = document.getElementById('rules-body');
+            if (!rules || rules.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No routing rules</td></tr>';
+                document.getElementById('routing-rules-count').textContent = '0';
+                return;
+            }
+
+            tbody.innerHTML = rules.map(r => `
+                <tr>
+                    <td>${r.pattern || '—'}</td>
+                    <td><span class="badge badge-${(r.priority || 'low').toLowerCase()}">${r.priority || 'Low'}</span></td>
+                    <td><span class="status"><div class="status-dot"></div>${r.enabled ? 'Active' : 'Inactive'}</span></td>
+                    <td><button class="btn" style="font-size: 11px;">Edit</button></td>
+                </tr>
+            `).join('');
+            document.getElementById('routing-rules-count').textContent = rules.length;
+        }
+
+        function renderMappings(mappings) {
+            const tbody = document.getElementById('mappings-body');
+            if (!mappings || mappings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No mappings</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = mappings.map(m => `
+                <tr>
+                    <td>${m.emotion || '—'}</td>
+                    <td><span class="badge badge-${(m.priority_level || 'low').toLowerCase()}">${m.priority_level || 'Low'}</span></td>
+                    <td><button class="btn" style="font-size: 11px;">Delete</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function updateKPIs() {
+            const comments = Array.isArray(allComments) ? allComments : [];
+            const total = comments.length;
+            const crisis = comments.filter(c => c.priority === 'Critical' || c.priority === 'High').length;
+            const avgConf = comments.length > 0 ? Math.round(comments.reduce((a, c) => a + (c.confidence || 0), 0) / comments.length * 100) : 0;
+            const noise = Math.round((1 - avgConf / 100) * 100);
+
+            document.getElementById('kpi-total').textContent = total;
+            document.getElementById('kpi-crisis').textContent = crisis;
+            document.getElementById('kpi-confidence').textContent = avgConf + '%';
+            document.getElementById('kpi-noise').textContent = noise + '%';
+        }
+
+        function updateCharts() {
+            const comments = Array.isArray(allComments) ? allComments : [];
+            
+            // Sentiment Chart
+            const emotionCounts = {};
+            comments.forEach(c => {
+                const e = c.emotion || 'unknown';
+                emotionCounts[e] = (emotionCounts[e] || 0) + 1;
+            });
+
+            const ctx1 = document.getElementById('sentiment-chart');
+            if (ctx1) {
+                if (charts.sentiment) charts.sentiment.destroy();
+                charts.sentiment = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(emotionCounts),
+                        datasets: [{
+                            label: 'Count',
+                            data: Object.values(emotionCounts),
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
+                });
+            }
+
+            // Priority Chart
+            const priorityCounts = { 'Low': 0, 'Medium': 0, 'High': 0, 'Critical': 0 };
+            comments.forEach(c => {
+                priorityCounts[c.priority || 'Low']++;
+            });
+
+            const ctx2 = document.getElementById('priority-chart');
+            if (ctx2) {
+                if (charts.priority) charts.priority.destroy();
+                charts.priority = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(priorityCounts),
+                        datasets: [{
+                            data: Object.values(priorityCounts),
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#dc2626']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            // Emotion Distribution
+            const ctx3 = document.getElementById('emotion-chart');
+            if (ctx3) {
+                if (charts.emotion) charts.emotion.destroy();
+                charts.emotion = new Chart(ctx3, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(emotionCounts),
+                        datasets: [{
+                            data: Object.values(emotionCounts),
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        }
+
+        function applyFilters() {
+            const emotion = document.getElementById('filter-emotion').value;
+            const priority = document.getElementById('filter-priority').value;
+            const search = document.getElementById('search-comments').value.toLowerCase();
+            const comments = Array.isArray(allComments) ? allComments : [];
+
+            const filtered = comments.filter(c => 
+                (!emotion || c.emotion === emotion) &&
+                (!priority || c.priority === priority) &&
+                (!search || (c.content || '').toLowerCase().includes(search))
+            );
+
+            const tbody = document.getElementById('comments-body');
+            tbody.innerHTML = filtered.slice(0, 50).map(c => `
+                <tr>
+                    <td><input type="checkbox" /></td>
+                    <td>${c.customer_name || c.source || 'Unknown'}</td>
+                    <td>${(c.content || '').substring(0, 50)}...</td>
+                    <td>${c.emotion || '—'}</td>
+                    <td><span class="badge badge-${(c.priority || 'low').toLowerCase()}">${c.priority || 'Low'}</span></td>
+                    <td>${Math.round((c.confidence || 0) * 100)}%</td>
+                    <td><button class="btn" style="font-size: 11px;">View</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function analyzeText() {
+            const text = document.getElementById('test-input').value;
+            if (!text) {
+                alert('Please enter a comment to analyze');
+                return;
+            }
+
+            const result = await api('/ai/analyze', {
+                method: 'POST',
+                body: JSON.stringify({ content: text })
+            });
+
+            if (result) {
+                document.getElementById('result-emotion').textContent = result.emotion || '—';
+                document.getElementById('result-intent').textContent = result.intent || '—';
+                document.getElementById('result-priority').textContent = result.priority || '—';
+                document.getElementById('result-confidence').textContent = Math.round((result.confidence || 0) * 100) + '%';
+                document.getElementById('test-result').style.display = 'block';
+            } else {
+                alert('Failed to analyze comment. Check console for details.');
+            }
+        }
+
+        function saveRule() {
+            const pattern = document.getElementById('rule-pattern').value;
+            const priority = document.getElementById('rule-priority').value;
+            if (!pattern) return;
+            closeModal('rule-modal');
+            loadData();
+        }
+
+        async function addMapping() {
+            const emotion = document.getElementById('mapping-emotion').value;
+            const priority = document.getElementById('mapping-priority').value;
+            if (!emotion) return;
+            loadData();
+        }
+
+        function saveConfig() {
+            const forceLocal = document.getElementById('cfg-force-local').checked;
+            const confidence = parseFloat(document.getElementById('cfg-confidence').value);
+            localStorage.setItem('config_force_local', forceLocal);
+            localStorage.setItem('config_confidence', confidence);
+            alert('Configuration saved!');
+        }
+
+        function addAPI() {
+            const name = document.getElementById('api-name').value;
+            if (!name) return;
+            alert('API added: ' + name);
+            document.getElementById('api-name').value = '';
+            document.getElementById('api-key').value = '';
+            document.getElementById('api-provider').value = '';
+        }
+
+        function loadInbox() {
+            // Load inbox items
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/frontend/login.html';
+        }
+
+        // Update confidence display
+        document.getElementById('cfg-confidence').addEventListener('input', (e) => {
+            document.getElementById('confidence-value').textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        // Close modals on background click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
