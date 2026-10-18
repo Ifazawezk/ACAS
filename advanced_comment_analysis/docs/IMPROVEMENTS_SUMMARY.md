@@ -193,7 +193,7 @@ http://127.0.0.1:8000/frontend/dashboard_improved.html
 
 | Account | Username | Password | Role |
 |---------|----------|----------|------|
-| **Manager** | `maha_ebeid` | `@Naha1983` | 👔 Manager |
+| **Manager** | `maha_ebeid` | `<SEED_MANAGER_PASSWORD>` | 👔 Manager |
 | **Admin** | `admin` | `admin@123` | 👨‍💼 Admin |
 | **User** | `demo_user` | `demo@123` | 👤 User |
 
@@ -316,7 +316,7 @@ messages/        # Dynamic messages
 ## 🧪 Testing Checklist
 
 ### Login Page
-- [ ] Login with valid credentials (maha_ebeid / @Naha1983)
+- [ ] Login with valid credentials (maha_ebeid / <SEED_MANAGER_PASSWORD>)
 - [ ] Register new account with role selection
 - [ ] Switch between Login/Register tabs
 - [ ] Password strength indicator on registration
@@ -367,7 +367,7 @@ curl -X POST http://localhost:8000/auth/token \
   -H "Content-Type: application/json" \
   -d '{
     "username": "maha_ebeid",
-    "password": "@Naha1983"
+    "password": "<SEED_MANAGER_PASSWORD>"
   }'
 ```
 

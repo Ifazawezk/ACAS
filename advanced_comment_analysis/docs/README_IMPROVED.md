@@ -96,7 +96,7 @@ A modern, fully-featured comment analysis platform with sentiment detection, rou
 
 | Role | Username | Password | Use Case |
 |------|----------|----------|----------|
-| 👔 Manager | `maha_ebeid` | `@Naha1983` | Manager demo account |
+| 👔 Manager | `maha_ebeid` | `<SEED_MANAGER_PASSWORD>` | Manager demo account |
 | 👨‍💼 Admin | `admin` | `admin@123` | System administration |
 | 👤 User | `demo_user` | `demo@123` | Regular user testing |
 

@@ -1,9 +1,0 @@
-# Copy to .env and fill values
-USE_SQLITE_DEV=true
-# For docker-compose setup use:
-# DATABASE_URL=postgresql://postgres:password@db:5432/commentdb
-DATABASE_URL=sqlite:///data/dev.db
-OPENAI_API_KEY=your_openai_api_key_here
-JWT_SECRET_KEY=supersecretjwtkey
-JWT_ALGORITHM=HS256
-JWT_EXPIRE_MINUTES=60
