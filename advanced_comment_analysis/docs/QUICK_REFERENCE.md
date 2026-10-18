@@ -13,7 +13,7 @@
 ## 👤 Login Credentials
 
 ```
-Manager:  maha_ebeid / @Naha1983
+Manager:  maha_ebeid / <SEED_MANAGER_PASSWORD>
 Admin:    admin / admin@123
 User:     demo_user / demo@123
 ```
@@ -101,7 +101,7 @@ QUICK_REFERENCE.md         ← This file
 ### 1. Test Login (v2.0)
 ```
 Go to: http://127.0.0.1:8000/frontend/login_improved.html
-Login with: maha_ebeid / @Naha1983
+Login with: maha_ebeid / <SEED_MANAGER_PASSWORD>
 Expected: Dashboard loads
 ```
 
@@ -214,7 +214,7 @@ POST /auth/register
 POST /auth/token
 {
   "username": "maha_ebeid",
-  "password": "@Naha1983"
+  "password": "<SEED_MANAGER_PASSWORD>"
 }
 ```
 

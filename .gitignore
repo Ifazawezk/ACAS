@@ -2,7 +2,6 @@
 .env
 *.env
 !.env.example
-!.env(1).example
 
 # Environments / dependencies
 .venv/
@@ -13,6 +12,8 @@ node_modules/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.coverage
+htmlcov/
 build/
 dist/
 
@@ -20,11 +21,18 @@ dist/
 *.db
 *.sqlite3
 
-# Logs / output
+# Logs / generated output
 *.log
 *.err
 pytest_output.txt
 installed.txt
+**/tools/sentic_audit.csv
+**/tools/smoke_output.txt
+**/tools/import_results.txt
+
+# Editor / OS
+.DS_Store
+Thumbs.db
 
 # Archives (too large for GitHub)
 *.rar

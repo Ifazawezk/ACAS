@@ -187,7 +187,7 @@ The Advanced Comment Analysis System (ACAS) is a complete enterprise-grade platf
 
 **Default Users**:
 - `admin` / `admin@123` (admin role)
-- `maha_ebeid` / `@Naha1983` (manager role)
+- `maha_ebeid` / `<SEED_MANAGER_PASSWORD>` (manager role)
 - `demo_user` / `demo@123` (user role)
 
 ### 12. **Web Scraping & URL Extraction**
