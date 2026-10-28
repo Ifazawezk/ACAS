@@ -32,7 +32,7 @@
 
 Everyone knows how it feels to complain and get no reply. Companies often do care, but they get far more feedback than people can read. Comments pile up across social media, review sites and complaint forms, and real problems get lost.
 
-ACAS started with one teammate who kept losing his luggage on the same airline and never heard back. He built a tool that used AI and web scraping to collect and analyze passenger comments. We then turned it into a general platform that any company in any sector can use.
+ACAS started with a friend who kept losing his luggage on the same airline and never heard back. I first built a small tool that used AI and web scraping to collect and analyze passenger comments, then turned it into a general platform that any company in any sector can use.
 
 ACAS uses AI to analyze customer comments. It finds the emotion, intent and priority in each one, suggests a reply, and opens a support ticket routed to the right team when one is needed. It runs **fully offline** with a built-in analyzer and a local SQLite database. Add an OpenAI key to use GPT models, or switch to Postgres for production.
 
