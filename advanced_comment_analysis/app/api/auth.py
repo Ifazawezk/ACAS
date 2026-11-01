@@ -48,6 +48,11 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Password must be at least 6 characters long"
         )
+    if len(user_in.password.encode('utf-8')) > security.MAX_PASSWORD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Password must be at most {security.MAX_PASSWORD_BYTES} bytes long"
+        )
     
     user = auth_service.create_user(db, user_in)
     token = security.create_access_token({"sub": str(user.id), "role": user.role.value})

@@ -11,14 +11,19 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from app.database.session import SessionLocal, engine, Base
 from app.models.user import User, UserRole
-from app.utils.security import hash_password
+from app.utils.security import hash_password, is_production
 
 load_dotenv()
 
 
 def seed_users():
     """Create default users in the database."""
-    
+    if is_production():
+        sys.exit(
+            "seed_users.py creates accounts with published passwords, so it does not run in "
+            "production. Use tools/create_admin.py instead."
+        )
+
     # Create tables
     Base.metadata.create_all(bind=engine)
     
