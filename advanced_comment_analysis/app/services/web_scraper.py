@@ -103,7 +103,7 @@ def fetch_url_content(url: str, timeout: int = 10) -> Optional[str]:
         if not url.startswith(('http://', 'https://')):
             url = 'https://' + url
             
-        # Set headers to mimic a browser
+        # Say who is asking
         headers = {
             'User-Agent': 'ACAS/1.0 (comment analysis)'
         }
