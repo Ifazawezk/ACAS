@@ -1,4 +1,6 @@
+import logging
 import os
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 import bcrypt
@@ -7,7 +9,36 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretjwtkey")
+logger = logging.getLogger(__name__)
+
+MIN_SECRET_LENGTH = 32
+# Any other value of ENVIRONMENT counts as production, so a typo cannot relax the checks.
+NON_PRODUCTION = {"", "development", "dev", "local", "test"}
+
+
+def is_production() -> bool:
+    return os.getenv("ENVIRONMENT", "").strip().lower() not in NON_PRODUCTION
+
+
+def load_jwt_secret() -> str:
+    """Return the signing secret. Production stops here without a real one, which stops the app."""
+    secret = os.getenv("JWT_SECRET_KEY", "").strip()
+    if len(secret) >= MIN_SECRET_LENGTH:
+        return secret
+    if is_production():
+        raise RuntimeError(
+            f"JWT_SECRET_KEY must be at least {MIN_SECRET_LENGTH} characters in production. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+        )
+    logger.warning(
+        "JWT_SECRET_KEY is missing or shorter than %s characters, so this run signs with a random "
+        "secret and logins end when it stops. Set JWT_SECRET_KEY in .env to keep them.",
+        MIN_SECRET_LENGTH,
+    )
+    return secrets.token_urlsafe(48)
+
+
+JWT_SECRET_KEY = load_jwt_secret()
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
 
