@@ -9,6 +9,7 @@ class AIAnalysis(BaseModel):
     needs_ticket: bool
     suggested_response: Optional[str]
     confidence: float = Field(..., ge=0.0, le=1.0)
+    analyzer: Optional[str] = Field(default=None, description="Which analyzer produced this: openai or local")
 
     @validator('priority')
     def priority_must_be_valid(cls, v):

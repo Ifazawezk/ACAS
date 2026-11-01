@@ -84,7 +84,7 @@ ACAS uses AI to analyze customer comments. It finds the emotion, intent and prio
 
 ## 🚀 Quick start
 
-> Requires **Python 3.11**. The commands below are for Windows PowerShell.
+> Requires **Python 3.11 or 3.12**. The commands below are for Windows PowerShell.
 
 ```powershell
 git clone https://github.com/Ifazawezk/ACAS.git
@@ -148,6 +148,8 @@ All settings are read from `advanced_comment_analysis/.env`. See [`.env.example`
 | `JWT_SECRET_KEY`          | —                      | **Set to a long random value** |
 | `JWT_ALGORITHM`           | `HS256`                | JWT signing algorithm |
 | `JWT_EXPIRE_MINUTES`      | `60`                   | How long a login token stays valid |
+
+Every analysis result has an `analyzer` field, either `openai` or `local`. If the API cannot be reached, ACAS falls back to the local analyzer and logs why, and `analyzer` shows `local`, so a bad key or an outage is easy to spot.
 
 ---
 
