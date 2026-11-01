@@ -47,6 +47,12 @@ def test_every_analyzer_emotion_has_a_sentiment():
         assert analyze_sentiment_locally(text)["emotion"] in evaluate.EMOTION_TO_SENTIMENT
 
 
+def test_confidence_bands_report_the_share_correct():
+    gold = ["negative", "negative", "positive"]
+    predicted = ["negative", "positive", "positive"]
+    assert evaluate.confidence_bands(gold, predicted, [0.55, 0.55, 0.9]) == "0.5-0.60: 50% of 2  0.8-0.95: 100% of 1"
+
+
 def test_mistakes_of_the_test_half_cannot_be_printed(monkeypatch):
     monkeypatch.setattr("sys.argv", ["evaluate_analyzer.py", "--split", "test", "--errors", "5"])
     with pytest.raises(SystemExit, match="spoil"):

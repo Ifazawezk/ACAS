@@ -33,6 +33,7 @@ os.environ["FORCE_LOCAL"] = "true"
 DATA_DIR = PROJECT_ROOT / "data" / "eval"
 CLASSES = ("negative", "neutral", "positive")
 EMOTION_TO_SENTIMENT = {"joy": "positive", "neutral": "neutral", "sadness": "negative", "anger": "negative"}
+CONFIDENCE_BANDS = ((0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 1.0))
 
 DATASETS = {
     "airline": {
@@ -130,11 +131,21 @@ def score(gold: list[str], predicted: list[str], tickets: list[bool]) -> dict:
     }
 
 
-def analyze(text: str) -> tuple[str, bool]:
+def analyze(text: str) -> tuple[str, bool, float]:
     from app.services.openai_client import analyze_sentiment_locally
 
     result = analyze_sentiment_locally(text)
-    return EMOTION_TO_SENTIMENT[result["emotion"]], bool(result["needs_ticket"])
+    return EMOTION_TO_SENTIMENT[result["emotion"]], bool(result["needs_ticket"]), result["confidence"]
+
+
+def confidence_bands(gold: list[str], predicted: list[str], confidence: list[float]) -> str:
+    """Share of correct answers at each confidence level. Confidence is not a probability."""
+    parts = []
+    for low, high in CONFIDENCE_BANDS:
+        hits = [g == p for g, p, c in zip(gold, predicted, confidence) if low <= c < high]
+        if hits:
+            parts.append(f"{low:.1f}-{min(high, 0.95):.2f}: {ratio(sum(hits), len(hits)):.0%} of {len(hits)}")
+    return "  ".join(parts)
 
 
 def format_row(name: str, s: dict) -> str:
@@ -159,12 +170,14 @@ def main() -> None:
         rows = load(name, args.split)
         gold = [label for _, label in rows]
         results = [analyze(text) for text, _ in rows]
-        predicted = [sentiment for sentiment, _ in results]
-        tickets = [ticket for _, ticket in results]
+        predicted = [sentiment for sentiment, _, _ in results]
+        tickets = [ticket for _, ticket, _ in results]
+        confidence = [value for _, _, value in results]
 
         majority = Counter(gold).most_common(1)[0][0]
         print(format_row(f"{name}: always {majority[:3]}", score(gold, [majority] * len(gold), [majority == "negative"] * len(gold))))
         print(format_row(f"{name}: analyzer", score(gold, predicted, tickets)))
+        print(f"    correct by confidence: {confidence_bands(gold, predicted, confidence)}")
 
         if args.errors:
             mistakes = [(g, p, t) for (t, g), p in zip(rows, predicted) if g != p]

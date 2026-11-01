@@ -26,3 +26,9 @@ def test_analyzed_comment_is_saved(client):
     text = "A comment that should reach the database"
     client.post("/ai/analyze", json={"content": text})
     assert text in [c["content"] for c in client.get("/comments/", params={"search": text}).json()]
+
+
+def test_negative_comments_reach_the_dashboard_figure(client):
+    # The dashboard used to count "angry" and "sad", but the analyzer says "anger" and "sadness".
+    client.post("/ai/analyze", json={"content": "This is the worst service, I hate it"})
+    assert client.get("/dashboard/metrics").json()["pct_negative"] > 0
