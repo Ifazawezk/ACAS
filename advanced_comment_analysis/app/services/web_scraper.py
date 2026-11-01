@@ -105,7 +105,7 @@ def fetch_url_content(url: str, timeout: int = 10) -> Optional[str]:
             
         # Set headers to mimic a browser
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'ACAS/1.0 (comment analysis)'
         }
         
         # Redirects are followed by hand, because any of them could point at a private address.
