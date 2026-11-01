@@ -14,15 +14,15 @@ from app.api import admin as admin_router
 from app.api import templates as templates_router
 from app.api import activity as activity_router
 from app.utils.logging_config import configure_logging
-from app.utils.roles import require_role
-from app.models.user import UserRole
+from app.utils.roles import enforce_access, require_admin
 from app.models.api_config import APIConfig  # Import to ensure table is created
 from app.models.activity_log import ActivityLog, Favorite  # Import for audit logging
 from app.services.ai_service import analyze_text
 from app.database.session import SessionLocal
 import logging
 
-app = FastAPI(title="Advanced Comment Analysis System - MVP")
+# Every route passes through enforce_access. See app/utils/roles.py for the rules.
+app = FastAPI(title="Advanced Comment Analysis System - MVP", dependencies=[Depends(enforce_access)])
 
 # --- Add CORS Setup Here ---
 app.add_middleware(
@@ -61,7 +61,7 @@ def startup():
 
 
 @app.get('/admin-only')
-def admin_only(user = Depends(require_role(UserRole.admin))):
+def admin_only(user = Depends(require_admin)):
     return {"status": "ok", "user": user.email}
 
 

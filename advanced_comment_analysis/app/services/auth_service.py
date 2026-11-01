@@ -2,8 +2,6 @@ from sqlalchemy.orm import Session
 from app.models.user import User, UserRole
 from app.schemas.auth import UserRegister
 from app.utils.security import hash_password, verify_password, create_access_token
-from app.utils.security import decode_access_token
-from app.models.user import User
 
 
 def get_user_by_username(db: Session, username: str):
@@ -40,13 +38,3 @@ def authenticate_user(db: Session, username: str, password: str):
     # create JWT
     token = create_access_token({"sub": str(user.id), "role": user.role.value})
     return token, user
-
-
-def get_user_from_token(db: Session, token: str):
-    """Decode JWT token and return User or None"""
-    try:
-        payload = decode_access_token(token)
-        user_id = int(payload.get("sub"))
-    except Exception:
-        return None
-    return db.query(User).filter(User.id == user_id).first()

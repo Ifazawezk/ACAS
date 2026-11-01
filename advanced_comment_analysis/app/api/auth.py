@@ -1,15 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.schemas.auth import UserRegister, UserLogin, Token, UserRead
 from app.services import auth_service
 from app.database.session import get_db
 from app.utils import security
+from app.utils.roles import get_current_user
 from app.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
 @router.post("/register", response_model=Token)
@@ -90,20 +88,5 @@ def login(form_data: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserRead)
-def get_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    user = auth_service.get_user_from_token(db, token)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    return user
-
-
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    try:
-        payload = security.decode_access_token(token)
-        user_id = int(payload.get("sub"))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+def get_me(user: User = Depends(get_current_user)):
     return user
