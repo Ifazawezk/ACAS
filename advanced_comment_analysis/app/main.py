@@ -14,21 +14,21 @@ from app.api import admin as admin_router
 from app.api import templates as templates_router
 from app.api import activity as activity_router
 from app.utils.logging_config import configure_logging
-from app.utils.roles import require_role
-from app.models.user import UserRole
+from app.utils.roles import enforce_access, require_admin
 from app.models.api_config import APIConfig  # Import to ensure table is created
 from app.models.activity_log import ActivityLog, Favorite  # Import for audit logging
-from app.services.ai_service import analyze_text
+from app.services.local_analyzer import analyze_sentiment_locally
 from app.database.session import SessionLocal
 import logging
 
-app = FastAPI(title="Advanced Comment Analysis System - MVP")
+# Every route passes through enforce_access. See app/utils/roles.py for the rules.
+app = FastAPI(title="Advanced Comment Analysis System - MVP", dependencies=[Depends(enforce_access)])
 
 # --- Add CORS Setup Here ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,
+    allow_credentials=False,  # Logins use the Authorization header, never cookies
     allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allows all headers
 )
@@ -61,7 +61,7 @@ def startup():
 
 
 @app.get('/admin-only')
-def admin_only(user = Depends(require_role(UserRole.admin))):
+def admin_only(user = Depends(require_admin)):
     return {"status": "ok", "user": user.email}
 
 
@@ -81,10 +81,10 @@ def health_check():
         status['db'] = 'error'
         status['status'] = 'degraded'
 
-    # AI quick check (use small input, will fall back to simulated)
+    # AI quick check. This route is public, so it uses the local analyzer and never the paid API.
     try:
-        res = analyze_text('health check')
-        if res and isinstance(res.confidence, float):
+        res = analyze_sentiment_locally('health check')
+        if isinstance(res.get('confidence'), float):
             status['ai'] = 'ok'
         else:
             status['ai'] = 'error'

@@ -23,7 +23,9 @@ if USE_SQLITE_DEV:
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False}, pool_pre_ping=True)
 else:
     DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@db:5432/commentdb")
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    # The access check and the route handler can run on different threads with one session.
+    connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+    engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

@@ -43,10 +43,10 @@ ACAS uses AI to analyze customer comments. It finds the emotion, intent and prio
 - **AI comment analysis**: emotion, intent, priority, confidence score and a suggested response
 - **Automatic ticket routing** to Support / Tech / Product, using configurable routing rules
 - **Dashboard** with live KPIs and history, installable on iPad as a PWA
-- **JWT authentication** with role-based access (admin, manager, user)
+- **JWT authentication** with two levels of access: any logged-in account, and admin ([details](#security))
 - **CSV batch import** and export of comments
 - **URL scraping** to analyze comments from a web page
-- **Response templates**, favorites and an activity/audit log
+- **Response templates and favorites**, both partly built ([details](#security))
 - **English and Arabic** interface (`frontend/translations`)
 - **Offline-first**: works without Docker, Postgres or an API key
 
@@ -96,7 +96,7 @@ Copy-Item .env.example .env        # then edit .env
 # 2. Install + run (creates .venv and starts the API on port 8000)
 powershell -ExecutionPolicy Bypass -File .\START_HERE.ps1
 
-# 3. (Optional) create the demo users
+# 3. (Optional, local only) create the demo users
 .\.venv\Scripts\python.exe tools\seed_users.py
 ```
 
@@ -129,7 +129,18 @@ uvicorn app.main:app --reload
 | User    | `demo_user` | `demo@123`                      |
 | Manager | `maha_ebeid`| set by `SEED_MANAGER_PASSWORD` in `.env` |
 
-Change or delete these accounts before you deploy anywhere public.
+`seed_users.py` will not run when `ENVIRONMENT` is production. If a database was seeded during development, delete these accounts before you use it anywhere public.
+
+### First admin
+
+Registration always creates a normal `user` and ignores any `role` in the request, so an admin can only come from a command run on the server:
+
+```powershell
+cd advanced_comment_analysis
+.\.venv\Scripts\python.exe tools\create_admin.py --username owner --email owner@example.com
+```
+
+It asks for a password of at least 12 characters. For scripts, set `ACAS_ADMIN_PASSWORD` instead. There is no password option, because command line arguments end up in shell history. It creates the tables if they are missing, so it works on an empty database. If the username is taken it stops and changes nothing. Run it with the same settings as the server, so it reaches the same database.
 
 ---
 
@@ -139,15 +150,18 @@ All settings are read from `advanced_comment_analysis/.env`. See [`.env.example`
 
 | Variable                  | Default                | Description |
 |---------------------------|------------------------|-------------|
+| `ENVIRONMENT`             | `development`          | `development`, `dev`, `local` and `test` are local. Any other value counts as production |
 | `USE_SQLITE_DEV`          | `true`                 | Use the local SQLite database |
 | `DATABASE_URL`            | `sqlite:///data/dev.db`| Database connection string (Postgres in production) |
 | `FORCE_LOCAL`             | `false`                | Always use the offline analyzer, even when an API key is set |
 | `OPENAI_API_KEY`          | —                      | Turns on OpenAI-powered analysis |
 | `OPENAI_MODEL`            | `gpt-4o`               | Model used for analysis |
 | `AI_CONFIDENCE_THRESHOLD` | `0.5`                  | Minimum confidence before AI output is trusted |
-| `JWT_SECRET_KEY`          | —                      | **Set to a long random value** |
+| `JWT_SECRET_KEY`          | none                   | **At least 32 random characters.** Production refuses to start without it. In development a missing or short value is replaced by a random secret, so logins end when the server stops |
 | `JWT_ALGORITHM`           | `HS256`                | JWT signing algorithm |
 | `JWT_EXPIRE_MINUTES`      | `60`                   | How long a login token stays valid |
+| `SCRAPE_ALLOWED_HOSTS`    | empty                  | Host names the URL scraper may fetch even if they are private, separated by commas |
+| `ACAS_ADMIN_PASSWORD`     | empty                  | Password for `tools/create_admin.py` when it runs from a script |
 
 Every analysis result has an `analyzer` field, either `openai` or `local`. If the API cannot be reached, ACAS falls back to the local analyzer and logs why, and `analyzer` shows `local`, so a bad key or an outage is easy to spot.
 
@@ -155,25 +169,28 @@ Every analysis result has an `analyzer` field, either `openai` or `local`. If th
 
 ## 🔌 API overview
 
-The full interactive reference is at `/docs`. Most endpoints require `Authorization: Bearer <token>`.
+The full interactive reference is at `/docs`. To try protected routes there, log in with `POST /auth/token`, click **Authorize** and paste the token.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/auth/register` | Create an account |
-| `POST` | `/auth/token` | Log in (`{"username", "password"}`) → JWT |
-| `GET`  | `/auth/me` | Current user |
-| `POST` | `/ai/analyze` | Analyze a single comment |
-| `POST` | `/ai/scrape-url` | Pull comments from a URL and analyze them |
-| `GET` / `POST` | `/comments/` | List / add comments |
-| `POST` | `/comments/upload` | CSV batch import |
-| `POST` | `/comments/bulk-action` | Bulk update comments |
-| `GET`  | `/comments/export/download` | Export comments |
-| `GET` / `POST` | `/tickets/` | List / create tickets |
-| `POST` | `/tickets/{id}/close` | Close a ticket |
-| `GET`  | `/dashboard/metrics` | KPIs for the dashboard |
-| `GET`  | `/dashboard/metrics/history` | KPI history |
-| `*`    | `/admin/rules`, `/admin/sentics`, `/admin/config`, `/admin/api-configs` | Admin settings |
-| `*`    | `/admin/templates`, `/admin/activity-log` | Templates and audit log |
+Every endpoint needs `Authorization: Bearer <token>`, except `POST /auth/register`, `POST /auth/token`, `GET /health`, the docs pages (`/docs`, `/redoc`, `/openapi.json`) and the static files under `/frontend`. No token gets a 401. An admin route called by a normal account gets a 403.
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| `POST` | `/auth/register` | Public | Create a normal account |
+| `POST` | `/auth/token` | Public | Log in (`{"username", "password"}`) → JWT |
+| `GET`  | `/health` | Public | Database and analyzer status |
+| `GET`  | `/auth/me` | Login | Current user |
+| `POST` | `/ai/analyze` | Login | Analyze a single comment |
+| `POST` | `/ai/scrape-url` | Login | Pull comments from a public URL, analyze them and save them |
+| `GET` / `POST` | `/comments/` | Login | List / add comments |
+| `POST` | `/comments/upload` | Login | CSV batch import |
+| `POST` | `/comments/bulk-action` | Admin | Bulk update or delete comments |
+| `GET`  | `/comments/export/download` | Admin | Export comments |
+| `GET` / `POST` | `/tickets/` | Login | List / create tickets |
+| `POST` | `/tickets/{id}/close` | Login | Close a ticket |
+| `GET`  | `/dashboard/metrics` | Login | KPIs for the dashboard |
+| `GET`  | `/dashboard/metrics/history` | Login | KPI history |
+| `*`    | `/admin/rules`, `/admin/sentics`, `/admin/config`, `/admin/api-configs` | Admin | Admin settings |
+| `*`    | `/admin/templates`, `/admin/activity-log` | Admin | Templates and activity log |
 
 **Example:**
 
@@ -194,6 +211,31 @@ Invoke-RestMethod -Uri http://127.0.0.1:8000/ai/analyze -Method Post `
   "analyzer": "local"
 }
 ```
+
+---
+
+## Security
+
+**What is enforced**
+
+- **One access check.** `enforce_access` in `app/utils/roles.py` runs on every route. A route needs a login unless it is listed in `PUBLIC_ROUTES`, and anything under `/admin` needs an admin. `tests/test_access.py` walks every route and fails if a non-public one answers without a token.
+- **Roles come from the database** on every request, not from the token. Deactivating an account ends its access straight away.
+- **Production needs a real secret.** When `ENVIRONMENT` is production, the app will not start unless `JWT_SECRET_KEY` has at least 32 characters. The Docker image sets production and `docker-compose.yml` sets development.
+- **URL scraping** refuses this machine and private networks, including through redirects.
+- **Uploads** are saved under a generated name. The name the client sends is never used as a path.
+
+**What is not covered yet**
+
+- **Anyone who can reach the server can register a normal account**, and a normal account can read every comment and ticket. On a public server, treat a login as proof of an account, not of trust, and keep the app behind a VPN or a firewall if the comments are private.
+- The `manager` role has no extra rights. It can do what `user` can.
+- Login, registration and uploads have no rate or size limit.
+- A token works until it expires. Logging out only removes it from the browser.
+- Tokens are kept in the browser's `localStorage`, so a script running on the page could read them. The dashboards escape comment text for this reason.
+- API keys saved through `/admin/api-configs` are stored as plain text, and analysis does not use them yet. It reads `OPENAI_API_KEY`.
+- There is no working audit log. Nothing writes to the activity log, and the routes under `/admin/activity-log` return 500.
+- Saving or reading a template under `/admin/templates` returns 500, and so does `GET /comments/favorites/list`.
+- CSV export leaves a copy of the comments in `/tmp`, and the link it returns does not work.
+- `docker-compose.yml` is for development. It uses a fixed Postgres password and publishes port 5432.
 
 ---
 
@@ -272,7 +314,7 @@ cd advanced_comment_analysis
 .\.venv\Scripts\python tools\verify_system.py
 ```
 
-**Adding an endpoint:** add a schema in `app/schemas/`, logic in `app/services/` and a router in `app/api/`, then register the router in `app/main.py`.
+**Adding an endpoint:** add a schema in `app/schemas/`, logic in `app/services/` and a router in `app/api/`, then register the router in `app/main.py`. A new route needs a login without any extra code, and an admin if its path starts with `/admin`. To make one public, add it to `PUBLIC_ROUTES` in `app/utils/roles.py` and to the list in `tests/test_access.py`.
 
 ### Docker
 
@@ -283,7 +325,7 @@ cd advanced_comment_analysis
 docker compose up --build
 ```
 
-Set `USE_SQLITE_DEV=false` and point `DATABASE_URL` at Postgres in `.env`.
+Set `USE_SQLITE_DEV=false` and point `DATABASE_URL` at Postgres in `.env`. Compose runs with `ENVIRONMENT=development`. The image on its own defaults to production, so give it a real `JWT_SECRET_KEY`.
 
 ---
 
@@ -303,6 +345,7 @@ More guides are in [`advanced_comment_analysis/docs`](advanced_comment_analysis/
 - **Port 8000 in use:** `Stop-Process -Id (Get-NetTCPConnection -LocalPort 8000).OwningProcess -Force`
 - **`ModuleNotFoundError`:** activate the venv (`.\.venv\Scripts\Activate.ps1`) and run `pip install -r requirements.txt`
 - **Database locked:** stop every running Python/uvicorn process and start again
+- **Logged out after every restart:** set `JWT_SECRET_KEY` in `.env` so the server keeps the same secret
 
 ---
 

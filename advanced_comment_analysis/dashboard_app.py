@@ -11,9 +11,33 @@ st.sidebar.markdown('## Controls')
 if st.sidebar.button('Refresh'):
     st.experimental_rerun()
 
+
+def log_in():
+    username = st.sidebar.text_input('Username')
+    password = st.sidebar.text_input('Password', type='password')
+    if st.sidebar.button('Log in'):
+        r = requests.post(f"{API_BASE}/auth/token", json={'username': username, 'password': password}, timeout=10)
+        if r.ok:
+            st.session_state['token'] = r.json()['access_token']
+            st.experimental_rerun()
+        st.sidebar.error('Login failed')
+    st.info('Log in from the sidebar to see the dashboard.')
+    st.stop()
+
+
+if 'token' not in st.session_state:
+    log_in()
+
 st.header('KPIs')
 try:
-    r = requests.get(f"{API_BASE}/dashboard/metrics")
+    r = requests.get(
+        f"{API_BASE}/dashboard/metrics",
+        headers={'Authorization': f"Bearer {st.session_state['token']}"},
+        timeout=10,
+    )
+    if r.status_code == 401:
+        del st.session_state['token']
+        st.experimental_rerun()
     r.raise_for_status()
     data = r.json()
 except Exception as e:

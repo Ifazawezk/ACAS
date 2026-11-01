@@ -106,30 +106,25 @@ def scrape_url_for_comments(payload: URLScrapeRequest, db: Session = Depends(get
             for item in extracted
         ]
         
-        # Optionally save extracted comments to database for analysis
+        # Analyze each comment and save it, so an urgent one opens a ticket like any other
+        saved_count = 0
         try:
             for comment in comments:
-                save_comment_and_analysis(
-                    db, 
-                    comment.text, 
-                    {
-                        'emotion': 'neutral',  # Will be analyzed when added to queue
-                        'intent': 'feedback',
-                        'priority': 'Low',
-                        'needs_ticket': False,
-                        'suggested_response': None,
-                        'confidence': 0.0
-                    },
-                    source=f"web_scrape:{url}"
-                )
+                analysis = analyze_text(comment.text)
+                if not analysis:
+                    logger.warning("Could not analyze a scraped comment, so it was not saved")
+                    continue
+                save_comment_and_analysis(db, comment.text, analysis.dict(), source=f"web_scrape:{url}")
+                saved_count += 1
         except Exception as e:
             logger.exception("Failed to save scraped comments to database")
             # Don't fail the request - still return the comments
-        
+
         return URLScrapeResponse(
             url=url,
             success=True,
             comments_count=len(comments),
+            saved_count=saved_count,
             comments=comments,
             error=None
         )

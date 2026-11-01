@@ -18,7 +18,6 @@ class UserRegister(BaseModel):
     username: str
     email: Optional[EmailStr] = None
     password: str
-    role: str = "user"  # default to user, can be: user, manager, admin
 
 
 class UserLogin(BaseModel):

@@ -547,25 +547,6 @@
                         <div class="field-error" data-i18n="auth.passwordsMismatch">Passwords don't match</div>
                     </div>
 
-                    <div class="form-group">
-                        <label data-i18n="auth.role">User Role</label>
-                        <div class="role-selector" id="role-selector">
-                            <div class="role-option" data-role="user">
-                                <div class="role-icon">👤</div>
-                                <div data-i18n="auth.roleUser">User</div>
-                            </div>
-                            <div class="role-option" data-role="manager">
-                                <div class="role-icon">👔</div>
-                                <div data-i18n="auth.roleManager">Manager</div>
-                            </div>
-                            <div class="role-option" data-role="admin">
-                                <div class="role-icon">👨‍💼</div>
-                                <div data-i18n="auth.roleAdmin">Admin</div>
-                            </div>
-                        </div>
-                        <input type="hidden" id="selected-role" name="role" value="user">
-                    </div>
-
                     <button type="submit" class="submit-button" data-i18n="auth.registerButton">
                         <span>Create Account</span>
                         <div class="spinner"></div>
@@ -586,7 +567,6 @@
             await i18n.loadLanguage();
             updatePageTranslations();
             setupLanguageSwitcher();
-            setupRoleSelector();
         });
 
         // Language switcher
@@ -619,20 +599,6 @@
         document.querySelectorAll('.tab-button').forEach(btn => {
             btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
         });
-
-        // Role selector
-        function setupRoleSelector() {
-            document.querySelectorAll('.role-option').forEach(option => {
-                option.addEventListener('click', () => {
-                    document.querySelectorAll('.role-option').forEach(o => o.classList.remove('selected'));
-                    option.classList.add('selected');
-                    document.getElementById('selected-role').value = option.getAttribute('data-role');
-                });
-            });
-            
-            // Set default selection
-            document.querySelector('[data-role="user"]').classList.add('selected');
-        }
 
         // Password strength indicator
         function updatePasswordStrength(password) {
@@ -767,8 +733,7 @@
                     body: JSON.stringify({
                         username: document.getElementById('register-username').value,
                         email: document.getElementById('register-email').value || null,
-                        password: password,
-                        role: document.getElementById('selected-role').value
+                        password: password
                     })
                 });
 

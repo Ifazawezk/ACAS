@@ -5,6 +5,8 @@ import shutil
 import os
 import csv
 import json
+import uuid
+from pathlib import PureWindowsPath
 from typing import List
 from datetime import datetime
 
@@ -61,12 +63,14 @@ def upload_csv(background_tasks: BackgroundTasks, file: UploadFile = File(...), 
     # Save uploaded file temporarily and process in background
     tmp_dir = os.path.join(os.getcwd(), "tmp")
     os.makedirs(tmp_dir, exist_ok=True)
-    tmp_path = os.path.join(tmp_dir, file.filename)
+    # The client picks file.filename, so it never becomes part of a path on this server.
+    tmp_path = os.path.join(tmp_dir, f"{uuid.uuid4().hex}.csv")
     with open(tmp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     # schedule background processing
     background_tasks.add_task(csv_service.process_csv_file, tmp_path, source)
-    return {"status": "accepted", "filename": file.filename}
+    # PureWindowsPath splits on both kinds of slash.
+    return {"status": "accepted", "filename": PureWindowsPath(file.filename or "").name}
 
 
 @router.post("/", response_model=dict)
@@ -161,7 +165,7 @@ def bulk_action(
     - delete: Delete multiple comments
     """
     from app.models.comment import Comment
-    from app.models.ticket import Ticket, TicketStatus, Priority
+    from app.models.ticket import Ticket, TicketStatus
     
     comments = db.query(Comment).filter(Comment.id.in_(comment_ids)).all()
     if not comments:
@@ -197,11 +201,12 @@ def bulk_action(
     
     elif action == "delete":
         for comment in comments:
-            try:
-                db.delete(comment)
-                count += 1
-            except:
-                continue
+            # A ticket cannot exist without its comment, and favorites have no foreign key.
+            if comment.ticket:
+                db.delete(comment.ticket)
+            db.query(Favorite).filter(Favorite.comment_id == comment.id).delete()
+            db.delete(comment)
+            count += 1
         db.commit()
     
     return {"status": "success", "action": action, "affected_count": count}

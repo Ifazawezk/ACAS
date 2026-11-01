@@ -452,22 +452,18 @@
                     <div class="kpi">
                         <div class="kpi-label">Analyzed (24h)</div>
                         <div class="kpi-value" id="kpi-total">250</div>
-                        <div class="kpi-trend positive">▲ +12%</div>
                     </div>
                     <div class="kpi">
                         <div class="kpi-label">Crisis Alerts</div>
                         <div class="kpi-value" id="kpi-crisis">60</div>
-                        <div class="kpi-trend negative">▼ -5</div>
                     </div>
                     <div class="kpi">
                         <div class="kpi-label">Avg. Confidence</div>
                         <div class="kpi-value" id="kpi-confidence">82%</div>
-                        <div class="kpi-trend positive">▲ +0.8%</div>
                     </div>
                     <div class="kpi">
                         <div class="kpi-label">Noise Filtered</div>
                         <div class="kpi-value" id="kpi-noise">24%</div>
-                        <div class="kpi-trend positive">▲ +2.1%</div>
                     </div>
                 </div>
 
@@ -778,6 +774,11 @@
             document.getElementById('refresh-inbox-btn').addEventListener('click', loadInbox);
         }
 
+        function escapeHtml(value) {
+            const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+            return String(value ?? '').replace(/[&<>"']/g, c => map[c]);
+        }
+
         async function api(path, options = {}) {
             const token = localStorage.getItem('auth_token');
             const headers = {
@@ -843,9 +844,9 @@
             tbody.innerHTML = allComments.slice(0, 50).map(c => `
                 <tr>
                     <td><input type="checkbox" /></td>
-                    <td>${c.customer_name || c.source || 'Unknown'}</td>
-                    <td>${(c.content || '').substring(0, 50)}...</td>
-                    <td>${c.emotion || '—'}</td>
+                    <td>${escapeHtml(c.customer_name || c.source || 'Unknown')}</td>
+                    <td>${escapeHtml((c.content || '').substring(0, 50))}...</td>
+                    <td>${escapeHtml(c.emotion || '-')}</td>
                     <td><span class="badge badge-${(c.priority || 'low').toLowerCase()}">${c.priority || 'Low'}</span></td>
                     <td>${Math.round((c.confidence || 0) * 100)}%</td>
                     <td>
@@ -867,9 +868,9 @@
 
             tbody.innerHTML = triage.map(c => `
                 <tr>
-                    <td>${c.customer_name || c.source}</td>
-                    <td>${(c.content || '').substring(0, 40)}...</td>
-                    <td>${c.emotion}</td>
+                    <td>${escapeHtml(c.customer_name || c.source)}</td>
+                    <td>${escapeHtml((c.content || '').substring(0, 40))}...</td>
+                    <td>${escapeHtml(c.emotion)}</td>
                     <td><span class="badge badge-${(c.priority || 'low').toLowerCase()}">${c.priority}</span></td>
                     <td>${Math.round((c.confidence || 0) * 100)}%</td>
                     <td><button class="btn" style="font-size: 11px;">Action</button></td>
@@ -887,7 +888,7 @@
 
             tbody.innerHTML = rules.map(r => `
                 <tr>
-                    <td>${r.pattern || '—'}</td>
+                    <td>${escapeHtml(r.pattern || '-')}</td>
                     <td><span class="badge badge-${(r.priority || 'low').toLowerCase()}">${r.priority || 'Low'}</span></td>
                     <td><span class="status"><div class="status-dot"></div>${r.enabled ? 'Active' : 'Inactive'}</span></td>
                     <td><button class="btn" style="font-size: 11px;">Edit</button></td>
@@ -905,7 +906,7 @@
 
             tbody.innerHTML = mappings.map(m => `
                 <tr>
-                    <td>${m.emotion || '—'}</td>
+                    <td>${escapeHtml(m.emotion || '-')}</td>
                     <td><span class="badge badge-${(m.priority_level || 'low').toLowerCase()}">${m.priority_level || 'Low'}</span></td>
                     <td><button class="btn" style="font-size: 11px;">Delete</button></td>
                 </tr>
@@ -1008,9 +1009,9 @@
             tbody.innerHTML = filtered.slice(0, 50).map(c => `
                 <tr>
                     <td><input type="checkbox" /></td>
-                    <td>${c.customer_name || c.source || 'Unknown'}</td>
-                    <td>${(c.content || '').substring(0, 50)}...</td>
-                    <td>${c.emotion || '—'}</td>
+                    <td>${escapeHtml(c.customer_name || c.source || 'Unknown')}</td>
+                    <td>${escapeHtml((c.content || '').substring(0, 50))}...</td>
+                    <td>${escapeHtml(c.emotion || '-')}</td>
                     <td><span class="badge badge-${(c.priority || 'low').toLowerCase()}">${c.priority || 'Low'}</span></td>
                     <td>${Math.round((c.confidence || 0) * 100)}%</td>
                     <td><button class="btn" style="font-size: 11px;">View</button></td>

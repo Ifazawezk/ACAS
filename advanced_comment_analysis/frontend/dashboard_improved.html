@@ -614,13 +614,11 @@
                         <div class="card metric-card">
                             <div class="metric-label" data-i18n="dashboard.totalComments">Total Comments</div>
                             <div class="metric-value" id="total-comments">0</div>
-                            <div class="metric-change positive">+12% <span data-i18n="dashboard.thisWeek">this week</span></div>
                         </div>
 
                         <div class="card metric-card">
                             <div class="metric-label" data-i18n="dashboard.totalTickets">Total Tickets</div>
                             <div class="metric-value" id="total-tickets">0</div>
-                            <div class="metric-change positive">+8% <span data-i18n="dashboard.thisWeek">this week</span></div>
                         </div>
 
                         <div class="card metric-card">
@@ -857,15 +855,20 @@
             document.getElementById('positive-sentiment').textContent = posPct + '%';
         }
 
+        function escapeHtml(value) {
+            const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+            return String(value ?? '').replace(/[&<>"']/g, c => map[c]);
+        }
+
         function populateTables(comments, tickets) {
             // Comments table
             const commentsBody = document.getElementById('comments-table');
             if (comments && comments.length > 0) {
                 commentsBody.innerHTML = comments.slice(0, 5).map(c => `
                     <tr>
-                        <td>${(c.customer_name || 'Anonymous')}</td>
-                        <td><span style="color: var(--primary);">${c.emotion || 'neutral'}</span></td>
-                        <td>${c.intent || 'general'}</td>
+                        <td>${escapeHtml(c.customer_name || 'Anonymous')}</td>
+                        <td><span style="color: var(--primary);">${escapeHtml(c.emotion || 'neutral')}</span></td>
+                        <td>${escapeHtml(c.intent || 'general')}</td>
                         <td>${new Date(c.created_at).toLocaleDateString()}</td>
                     </tr>
                 `).join('');
@@ -878,9 +881,9 @@
             if (tickets && tickets.length > 0) {
                 ticketsBody.innerHTML = tickets.slice(0, 5).map(t => `
                     <tr>
-                        <td>${t.title || 'Untitled'}</td>
-                        <td><span style="color: var(--success);">${t.status || 'open'}</span></td>
-                        <td>${t.priority || 'medium'}</td>
+                        <td>${escapeHtml(t.title || 'Untitled')}</td>
+                        <td><span style="color: var(--success);">${escapeHtml(t.status || 'open')}</span></td>
+                        <td>${escapeHtml(t.priority || 'medium')}</td>
                         <td>${new Date(t.created_at).toLocaleDateString()}</td>
                     </tr>
                 `).join('');

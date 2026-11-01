@@ -370,24 +370,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Role</label>
-                    <div class="role-grid">
-                        <label class="role-option">
-                            <input type="radio" name="role" value="user" checked>
-                            <span>👤 User</span>
-                        </label>
-                        <label class="role-option">
-                            <input type="radio" name="role" value="manager">
-                            <span>👔 Manager</span>
-                        </label>
-                        <label class="role-option">
-                            <input type="radio" name="role" value="admin">
-                            <span>👨‍💼 Admin</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-group">
                     <label for="register-password">Password</label>
                     <input type="password" id="register-password" name="password" placeholder="At least 6 characters" required>
                 </div>
@@ -422,15 +404,6 @@
                 clearAlert();
             });
         });
-
-        // Role selection
-        document.querySelectorAll('.role-option input').forEach(input => {
-            input.addEventListener('change', function() {
-                document.querySelectorAll('.role-option').forEach(opt => opt.classList.remove('selected'));
-                this.parentElement.classList.add('selected');
-            });
-        });
-        document.querySelector('.role-option').classList.add('selected');
 
         async function handleLogin(event) {
             event.preventDefault();
@@ -487,7 +460,6 @@
             const username = document.getElementById('register-username').value.trim();
             const email = document.getElementById('register-email').value.trim();
             const password = document.getElementById('register-password').value;
-            const role = document.querySelector('input[name="role"]:checked').value;
 
             if (!username || !password || password.length < 6) {
                 showAlert('Username and password (min 6 chars) are required', 'error');
@@ -505,8 +477,7 @@
                     body: JSON.stringify({
                         username,
                         email: email || null,
-                        password,
-                        role
+                        password
                     })
                 });
 
