@@ -24,7 +24,7 @@ def safe_enum_value(enum_obj):
 def metrics(db: Session = Depends(get_db)):
     total_comments = db.query(func.count(Comment.id)).scalar() or 0
     # define negative emotions set
-    negative_emotions = ["angry", "sad", "frustrated", "negative", "upset"]
+    negative_emotions = ["anger", "sadness", "fear", "frustration", "angry", "sad", "frustrated", "negative", "upset"]
     negative_count = db.query(func.count(Comment.id)).filter(Comment.emotion.in_(negative_emotions)).scalar() or 0
     pct_negative = (negative_count / total_comments) if total_comments else 0.0
 

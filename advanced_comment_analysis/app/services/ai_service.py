@@ -25,6 +25,18 @@ def build_prompt(comment_text: str) -> str:
     return SYSTEM_PROMPT + "\nCOMMENT:\n" + comment_text
 
 
+def parse_analysis(raw: str) -> AIAnalysis:
+    """Parse the JSON answer. Models sometimes wrap it in a Markdown code fence."""
+    text = raw.strip()
+    if text.startswith("```"):
+        text = text.strip("`").strip()
+        if text.startswith("json"):
+            text = text[len("json"):]
+    parsed = json.loads(text)
+    parsed.setdefault("analyzer", "openai")
+    return AIAnalysis(**parsed)
+
+
 def analyze_text(comment_text: str, max_retries: int = 3) -> Optional[AIAnalysis]:
     prompt = build_prompt(comment_text)
     attempt = 0
@@ -39,8 +51,7 @@ def analyze_text(comment_text: str, max_retries: int = 3) -> Optional[AIAnalysis
             continue
         # Try to parse JSON strictly
         try:
-            parsed = json.loads(raw)
-            analysis = AIAnalysis(**parsed)
+            analysis = parse_analysis(raw)
             logger.info('AI analysis parsed: %s', analysis.dict())
             # Confidence threshold handling: if below threshold, ensure a ticket is created
             if analysis.confidence < AI_CONFIDENCE_THRESHOLD:
