@@ -178,21 +178,54 @@ The full interactive reference is at `/docs`. Most endpoints require `Authorizat
 **Example:**
 
 ```powershell
-$body = @{ comment_text = "This API keeps crashing!" } | ConvertTo-Json
+$body = @{ content = "This API keeps crashing!" } | ConvertTo-Json
 Invoke-RestMethod -Uri http://127.0.0.1:8000/ai/analyze -Method Post `
   -Body $body -ContentType application/json -Headers @{ Authorization = "Bearer $token" }
 ```
 
 ```json
 {
-  "emotion": "frustration",
-  "intent": "support",
-  "priority": "High",
+  "emotion": "anger",
+  "intent": "bug_report",
+  "priority": "Critical",
   "needs_ticket": true,
-  "confidence": 0.94,
-  "suggested_response": "We sincerely apologize..."
+  "suggested_response": "We sincerely apologize for this issue. Our team will investigate immediately.",
+  "confidence": 0.93,
+  "analyzer": "local"
 }
 ```
+
+---
+
+## How accurate is the offline analyzer?
+
+The analyzer that runs without an API key was measured on about 13,000 real comments it was not written from. The rules were written on a separate development half and were frozen before this test half was run. Before is the original analyzer, now is this version.
+
+| Held-out comments | Accuracy | Macro F1 | Tickets opened | Ticket precision | Ticket recall |
+|---|---|---|---|---|---|
+| English airline tweets (7,145) | 65.0% to 60.8% | 0.392 to 0.571 | 91.5% to 48.0% | 65.9% to 88.4% | 95.8% to 67.4% |
+| Arabic product reviews (2,074) | 22.6% to 66.0% | 0.136 to 0.506 | 97.3% to 16.8% | 20.6% to 64.7% | 99.5% to 53.8% |
+| Arabic restaurant reviews (4,159) | 29.0% to 69.9% | 0.227 to 0.725 | 99.8% to 33.9% | 28.9% to 55.5% | 99.8% to 65.1% |
+
+A comment labelled negative counts as one that should open a ticket. Precision is the share of opened tickets that were real complaints, and recall is the share of real complaints that got a ticket.
+
+**How to read this.** The original analyzer scored everything it did not understand as sadness, including all Arabic text, so it opened a ticket for almost every comment. That is why its recall looks high. The new version opens far fewer tickets and most of them are right, but it **misses about a third to a half of complaints**, because many complaints use no emotional words at all. Plain accuracy on the English set went down: always answering "negative" scores 63.0% there, and always answering "positive" scores 72.9% and 71.1% on the Arabic sets, so accuracy alone says little. Macro F1 treats every class equally and is the fairer figure. If a missed complaint is expensive for you, use OpenAI mode or have someone review the comments that get no ticket.
+
+**What this does not show.**
+
+- Intent, priority, and the split between anger and sadness have no labels in this data, so they are not measured.
+- OpenAI mode is not measured here.
+- The Arabic labels come from star ratings, not from people reading the reviews, and some are plainly wrong. These are also product and restaurant reviews, not support messages, so results on real support messages may differ.
+- Arabic written in Latin letters (such as "el service wa7sh") is treated as English and will not work well.
+- `confidence` is a strength score, not a probability. Higher does mean more often right: on the test half, comments at 0.8 or above were correct 76% (airline), 91% and 92% (Arabic) of the time. Below 0.6 means little was found in the comment, and the Arabic figures there are low (8% to 10%) because those data sets have few neutral comments.
+
+Run it yourself. This downloads about 7 MB into `data/eval`, which git ignores:
+
+```powershell
+.\.venv\Scripts\python tools\evaluate_analyzer.py --split test
+```
+
+The data is not stored here because of its licences: [Twitter US Airline Sentiment](https://huggingface.co/datasets/osanseviero/twitter-airline-sentiment) (CC BY-NC-SA 4.0) and the [Arabic review data](https://github.com/hadyelsahar/large-arabic-sentiment-analysis-resouces) from ElSahar and El-Beltagy (2015).
 
 ---
 
@@ -231,6 +264,9 @@ cd advanced_comment_analysis
 
 # Unit tests
 .\.venv\Scripts\python -m pytest tests -v
+
+# Offline analyzer on real labelled comments (development half)
+.\.venv\Scripts\python tools\evaluate_analyzer.py
 
 # End-to-end checks against a running server
 .\.venv\Scripts\python tools\verify_system.py
