@@ -1,13 +1,19 @@
 """
 Web scraper service for extracting HTML content from URLs
 """
+import ipaddress
+import os
+import socket
 import requests
 from typing import Optional
+from urllib.parse import urljoin, urlsplit
 import logging
 from html.parser import HTMLParser
 import re
 
 logger = logging.getLogger(__name__)
+
+MAX_REDIRECTS = 5
 
 
 class TextExtractor(HTMLParser):
@@ -59,6 +65,28 @@ class TextExtractor(HTMLParser):
         return text.strip()
 
 
+def is_allowed_url(url: str) -> bool:
+    """False for this machine and private networks, so callers cannot read them through the scraper.
+
+    SCRAPE_ALLOWED_HOSTS is a comma separated list of host names that are allowed anyway.
+    """
+    host = urlsplit(url).hostname
+    if not host:
+        return False
+    allowed = os.getenv("SCRAPE_ALLOWED_HOSTS", "").lower().split(",")
+    if host.lower() in [name.strip() for name in allowed if name.strip()]:
+        return True
+    try:
+        addresses = {info[4][0] for info in socket.getaddrinfo(host, None)}
+    except socket.gaierror:
+        return False
+    for address in addresses:
+        ip = ipaddress.ip_address(address.split("%")[0])
+        if not (getattr(ip, "ipv4_mapped", None) or ip).is_global:
+            return False
+    return bool(addresses)
+
+
 def fetch_url_content(url: str, timeout: int = 10) -> Optional[str]:
     """
     Fetch HTML content from a URL
@@ -80,11 +108,20 @@ def fetch_url_content(url: str, timeout: int = 10) -> Optional[str]:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
         
-        response = requests.get(url, timeout=timeout, headers=headers)
-        response.raise_for_status()
-        
-        return response.text
-        
+        # Redirects are followed by hand, because any of them could point at a private address.
+        for _ in range(MAX_REDIRECTS + 1):
+            if not is_allowed_url(url):
+                logger.warning(f'Refused to fetch a private address: {url}')
+                return None
+            response = requests.get(url, timeout=timeout, headers=headers, allow_redirects=False)
+            if not response.is_redirect:
+                response.raise_for_status()
+                return response.text
+            url = urljoin(url, response.headers['location'])
+
+        logger.error(f'Too many redirects fetching URL: {url}')
+        return None
+
     except requests.exceptions.Timeout:
         logger.error(f'Timeout fetching URL: {url}')
         return None

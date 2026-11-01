@@ -2,11 +2,10 @@
 API Configuration model for storing third-party API keys and credentials
 """
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
-from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 import json
 
-Base = declarative_base()
+from app.database.session import Base
 
 
 class APIConfig(Base):
@@ -15,7 +14,7 @@ class APIConfig(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, nullable=False, index=True)  # e.g., "openai", "huggingface"
     provider = Column(String(100), nullable=False)  # e.g., "OpenAI", "HuggingFace"
-    api_key = Column(Text, nullable=False)  # Encrypted in production
+    api_key = Column(Text, nullable=False)  # Plain text. Only to_dict(include_key=True) reveals it.
     api_url = Column(String(500), nullable=True)  # Optional custom endpoint
     model_name = Column(String(200), nullable=True)  # e.g., "gpt-4o" for OpenAI
     config_json = Column(Text, nullable=True)  # Additional config as JSON

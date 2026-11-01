@@ -875,7 +875,6 @@
                             <span id="scrape-count" style="background: var(--accent); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;"></span>
                         </div>
                         <div id="scrape-comments" style="max-height: 400px; overflow-y: auto;"></div>
-                        <button class="btn" id="btn-add-scraped" style="margin-top: 12px; width: 100%;">➕ Add All to Analysis Queue</button>
                     </div>
 
                     <div id="scrape-error" style="display: none; margin-top: 20px; padding: 16px; background: rgba(244, 67, 54, 0.1); border-radius: 8px; border-left: 4px solid var(--danger); color: var(--danger);"></div>
@@ -1067,7 +1066,7 @@
                                 ${escapeHtml((c.content || '').substring(0, 60))}${(c.content || '').length > 60 ? '...' : ''}
                             </div>
                         </td>
-                        <td><span>${emotionEmoji} ${c.emotion || 'unknown'}</span></td>
+                        <td><span>${emotionEmoji} ${escapeHtml(c.emotion || 'unknown')}</span></td>
                         <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${c.priority === 'Critical' ? 'rgba(239,68,68,0.15)' : 'rgba(249,115,22,0.15)'}; color: ${c.priority === 'Critical' ? '#ef4444' : '#f97316'};">${c.priority || 'Low'}</span></td>
                         <td><span style="color: ${confidenceColor}; font-weight: 600;">${Math.round((c.confidence || 0) * 100)}%</span></td>
                         <td>
@@ -1158,13 +1157,13 @@
                             <div>
                                 <div style="font-size: 12px; color: var(--muted);">Emotion</div>
                                 <div style="padding: 4px 8px; border-radius: 4px; background: rgba(16,185,129,0.1); color: #10b981; font-weight: 600; display: inline-block; margin-top: 4px;">
-                                    ${comment.emotion || 'unknown'}
+                                    ${escapeHtml(comment.emotion || 'unknown')}
                                 </div>
                             </div>
                             <div>
                                 <div style="font-size: 12px; color: var(--muted);">Intent</div>
                                 <div style="padding: 4px 8px; border-radius: 4px; background: rgba(59,130,246,0.1); color: #3b82f6; font-weight: 600; display: inline-block; margin-top: 4px;">
-                                    ${comment.intent || 'unknown'}
+                                    ${escapeHtml(comment.intent || 'unknown')}
                                 </div>
                             </div>
                             <div>
@@ -1255,7 +1254,7 @@
 
             const tabsContainer = document.getElementById('sidebar-tabs');
             tabsContainer.innerHTML = tabs.map(t => 
-                `<button class="tab ${t.id === 'live' ? 'active' : ''}" data-tab="${t.id}">${t.label} ${t.title}</button>`
+                `<button class="tab ${t.id === 'live' ? 'active' : ''}" data-tab="${t.id}">${t.label} ${escapeHtml(t.title)}</button>`
             ).join('');
 
             tabs.forEach(tab => {
@@ -1347,7 +1346,6 @@
             document.getElementById('btn-add-queue').addEventListener('click', queueComment);
             document.getElementById('btn-scrape-url').addEventListener('click', scrapeUrl);
             document.getElementById('btn-clear-scrape').addEventListener('click', clearScrapeScrape);
-            document.getElementById('btn-add-scraped').addEventListener('click', addScrapedToQueue);
             document.getElementById('btn-save-config').addEventListener('click', saveConfig);
             document.getElementById('btn-refresh-inbox').addEventListener('click', loadInbox);
             document.getElementById('inbox-filter').addEventListener('change', loadInbox);
@@ -1953,9 +1951,9 @@
                     item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--hover); border-radius: 6px; border-left: 3px solid ' + (api_config.test_status === 'success' ? '#10b981' : api_config.test_status === 'failed' ? '#ef4444' : '#6b7280');
                     item.innerHTML = `
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; color: var(--text);">${api_config.provider}</div>
+                            <div style="font-weight: 600; color: var(--text);">${escapeHtml(api_config.provider)}</div>
                             <div style="font-size: 12px; color: var(--muted);">
-                                ${api_config.name} ${api_config.model_name ? '• ' + api_config.model_name : ''}
+                                ${escapeHtml(api_config.name)} ${api_config.model_name ? '• ' + escapeHtml(api_config.model_name) : ''}
                             </div>
                             ${api_config.last_tested ? `<div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Last tested: ${new Date(api_config.last_tested).toLocaleString()}</div>` : ''}
                         </div>
@@ -2081,12 +2079,9 @@
             if (!container.children.length || !container.querySelector('.list-item')) container.innerHTML = '';
             const item = document.createElement('div');
             item.className = 'list-item';
-            item.innerHTML = `<div><div class="list-item-title">${escapeHtml(comment.content.substring(0, 50))}...</div><div class="list-item-meta">${comment.intent || '—'} • ${Math.round((comment.confidence || 0) * 100)}%</div></div><span class="badge badge-${comment.priority.toLowerCase()}">${comment.priority}</span>`;
+            item.innerHTML = `<div><div class="list-item-title">${escapeHtml(comment.content.substring(0, 50))}...</div><div class="list-item-meta">${escapeHtml(comment.intent || '-')} • ${Math.round((comment.confidence || 0) * 100)}%</div></div><span class="badge badge-${comment.priority.toLowerCase()}">${comment.priority}</span>`;
             container.prepend(item);
         }
-
-        // Store scraped comments for later use
-        let scrapedComments = [];
 
         async function scrapeUrl() {
             const url = document.getElementById('url-input').value.trim();
@@ -2126,9 +2121,6 @@
                     return;
                 }
 
-                // Store comments for later
-                scrapedComments = result.comments;
-
                 // Display results
                 const container = document.getElementById('scrape-comments');
                 container.innerHTML = '';
@@ -2140,15 +2132,15 @@
                         <div style="flex: 1;">
                             <div class="list-item-title">${escapeHtml(comment.text.substring(0, 80))}${comment.text.length > 80 ? '...' : ''}</div>
                             <div class="list-item-meta">
-                                ${comment.source ? `Source: ${comment.source}` : ''}
-                                ${comment.author ? ` • By: ${comment.author}` : ''}
+                                ${comment.source ? `Source: ${escapeHtml(comment.source)}` : ''}
+                                ${comment.author ? ` • By: ${escapeHtml(comment.author)}` : ''}
                             </div>
                         </div>
                     `;
                     container.appendChild(div);
                 });
 
-                document.getElementById('scrape-count').textContent = `${result.comments.length} comments`;
+                document.getElementById('scrape-count').textContent = `${result.saved_count} of ${result.comments.length} comments analyzed and saved`;
                 document.getElementById('scrape-result').style.display = 'block';
                 document.getElementById('scrape-loading').style.display = 'none';
 
@@ -2168,40 +2160,6 @@
             document.getElementById('scrape-result').style.display = 'none';
             document.getElementById('scrape-error').style.display = 'none';
             document.getElementById('scrape-loading').style.display = 'none';
-            scrapedComments = [];
-        }
-
-        async function addScrapedToQueue() {
-            if (scrapedComments.length === 0) {
-                alert('No comments to add');
-                return;
-            }
-
-            document.getElementById('btn-add-scraped').disabled = true;
-            try {
-                let added = 0;
-                for (const comment of scrapedComments) {
-                    try {
-                        await api('/comments/', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                content: comment.text,
-                                source: `web_scrape:${comment.source || 'unknown'}`
-                            })
-                        });
-                        added++;
-                    } catch (e) {
-                        console.error('Failed to add comment:', e);
-                    }
-                }
-
-                alert(`Added ${added}/${scrapedComments.length} comments to analysis queue`);
-                clearScrapeScrape();
-            } catch (error) {
-                alert('Error adding comments: ' + error.message);
-            } finally {
-                document.getElementById('btn-add-scraped').disabled = false;
-            }
         }
 
         async function loadInbox() {
@@ -2220,7 +2178,7 @@
                 if (filter === 'no-ticket') filtered = comments.filter(c => !ticketMap[c.id]);
                 container.innerHTML = filtered.map(c => {
                     const ticket = ticketMap[c.id];
-                    return `<div class="list-item"><div style="flex: 1;"><div class="list-item-title">${escapeHtml(c.content.substring(0, 80))}...</div><div class="list-item-meta">${c.emotion || '—'} • ${c.intent || '—'} • ${new Date(c.created_at).toLocaleDateString()}</div>${ticket ? `<div class="list-item-meta" style="color: #10b981;">✓ Ticket #${ticket.id}</div>` : ''}</div><span class="badge badge-${c.priority.toLowerCase()}">${c.priority}</span><div class="list-item-actions">${!ticket ? `<button class="btn" onclick="createTicket(${c.id})" style="padding: 4px 8px; font-size: 12px;">Create</button>` : ''}</div></div>`;
+                    return `<div class="list-item"><div style="flex: 1;"><div class="list-item-title">${escapeHtml(c.content.substring(0, 80))}...</div><div class="list-item-meta">${escapeHtml(c.emotion || '-')} • ${escapeHtml(c.intent || '-')} • ${new Date(c.created_at).toLocaleDateString()}</div>${ticket ? `<div class="list-item-meta" style="color: #10b981;">✓ Ticket #${ticket.id}</div>` : ''}</div><span class="badge badge-${c.priority.toLowerCase()}">${c.priority}</span><div class="list-item-actions">${!ticket ? `<button class="btn" onclick="createTicket(${c.id})" style="padding: 4px 8px; font-size: 12px;">Create</button>` : ''}</div></div>`;
                 }).join('');
                 if (!filtered.length) container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No comments</p></div>';
             } catch (e) { 
@@ -2391,11 +2349,11 @@
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <span style="font-size: 18px;">${icon}</span>
-                                <span style="font-weight: 600; margin-left: 8px;">${log.action_type}</span>
+                                <span style="font-weight: 600; margin-left: 8px;">${escapeHtml(log.action_type)}</span>
                             </div>
                             <span style="font-size: 12px; color: var(--muted);">${time}</span>
                         </div>
-                        <div style="font-size: 13px; margin-top: 4px; color: var(--muted);">${log.description || log.resource_type}</div>
+                        <div style="font-size: 13px; margin-top: 4px; color: var(--muted);">${escapeHtml(log.description || log.resource_type)}</div>
                     </div>
                 `;
             }).join('');

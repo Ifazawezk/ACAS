@@ -1,7 +1,7 @@
 // ACAS PWA Service Worker
 // Provides offline caching, background sync, and push notifications
 
-const CACHE_NAME = 'acas-v2-fixed';
+const CACHE_NAME = 'acas-v3';
 const ASSETS_TO_CACHE = [
   '/frontend/styles.css',
   '/frontend/i18n.js',

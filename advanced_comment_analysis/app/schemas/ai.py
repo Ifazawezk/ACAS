@@ -43,5 +43,6 @@ class URLScrapeResponse(BaseModel):
     url: str = Field(..., description="The URL that was scraped")
     success: bool = Field(..., description="Whether scraping was successful")
     comments_count: int = Field(..., description="Number of comments extracted")
+    saved_count: int = Field(default=0, description="Number of comments analyzed and saved")
     comments: List[ExtractedComment] = Field(default_factory=list, description="List of extracted comments")
     error: Optional[str] = Field(default=None, description="Error message if scraping failed")
