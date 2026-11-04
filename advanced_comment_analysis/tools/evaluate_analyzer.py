@@ -16,6 +16,11 @@ The datasets label sentiment, so that is what can be measured here:
     joy is counted as positive, neutral as neutral, sadness and anger as negative.
 A comment labelled negative is treated as one that should open a ticket.
 Intent and priority have no labels and are not measured.
+
+Every run also saves one row per comment to data/eval/cases-<half>.csv (or --cases), with the
+dataset, an id made from the text, the gold and predicted label, and whether a ticket should have
+opened and did. The ids stay the same between runs, so two versions of the analyzer can be
+compared comment by comment, for example with McNemar's test. The text itself is not saved.
 """
 import argparse
 import csv
@@ -148,6 +153,18 @@ def confidence_bands(gold: list[str], predicted: list[str], confidence: list[flo
     return "  ".join(parts)
 
 
+def case_id(dataset: str, text: str) -> str:
+    return f"{dataset}-{hashlib.sha256(text.encode('utf-8')).hexdigest()[:12]}"
+
+
+def save_cases(path: Path, cases: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["dataset", "id", "gold", "predicted", "ticket_gold", "ticket_predicted"])
+        writer.writeheader()
+        writer.writerows(cases)
+
+
 def format_row(name: str, s: dict) -> str:
     return (
         f"{name:22s} {s['comments']:>7d} {s['accuracy']:>7.1%} {s['macro_f1']:>7.3f} "
@@ -159,6 +176,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--split", choices=("dev", "test"), default="dev")
     parser.add_argument("--errors", type=int, default=0, help="print this many mistakes (development half only)")
+    parser.add_argument("--cases", type=Path, help="where to save one row per comment (default data/eval/cases-<half>.csv)")
     args = parser.parse_args()
     if args.errors and args.split == "test":
         raise SystemExit("Reading the test half's mistakes would spoil it. Use the development half.")
@@ -166,6 +184,7 @@ def main() -> None:
     sys.stdout.reconfigure(encoding="utf-8")
     print(f"half: {args.split}")
     print(f"{'':22s} {'n':>7s} {'acc':>7s} {'macroF1':>7s} {'tickets':>7s} {'t.prec':>7s} {'t.rec':>7s} {'t.F1':>7s}")
+    cases = []
     for name in DATASETS:
         rows = load(name, args.split)
         gold = [label for _, label in rows]
@@ -178,11 +197,27 @@ def main() -> None:
         print(format_row(f"{name}: always {majority[:3]}", score(gold, [majority] * len(gold), [majority == "negative"] * len(gold))))
         print(format_row(f"{name}: analyzer", score(gold, predicted, tickets)))
         print(f"    correct by confidence: {confidence_bands(gold, predicted, confidence)}")
+        cases += [
+            {
+                "dataset": name,
+                "id": case_id(name, text),
+                "gold": g,
+                "predicted": p,
+                "ticket_gold": int(g == "negative"),
+                "ticket_predicted": int(t),
+            }
+            for (text, g), p, t in zip(rows, predicted, tickets)
+        ]
 
         if args.errors:
             mistakes = [(g, p, t) for (t, g), p in zip(rows, predicted) if g != p]
             for g, p, t in mistakes[: args.errors]:
                 print(f"    gold={g[:3]} got={p[:3]} {t[:110]!r}")
+
+    # stderr, so the printed figures stay exactly as they were.
+    cases_path = args.cases or DATA_DIR / f"cases-{args.split}.csv"
+    save_cases(cases_path, cases)
+    print(f"saved {len(cases)} comments to {cases_path}", file=sys.stderr)
 
 
 if __name__ == "__main__":

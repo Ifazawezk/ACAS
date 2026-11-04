@@ -197,6 +197,8 @@ To run it yourself (this downloads about 7 MB into `data/eval`, which git ignore
 .\.venv\Scripts\python tools\evaluate_analyzer.py --split test
 ```
 
+Each run also writes one row per comment to `data/eval/cases-test.csv` (or `cases-dev.csv`): the dataset, an id made from the text, the gold and predicted label, and whether a ticket should have opened and did. The ids don't change between runs, so two versions of the analyzer can be compared comment by comment, with McNemar's test for example.
+
 The data isn't stored here because of its licences: [Twitter US Airline Sentiment](https://huggingface.co/datasets/osanseviero/twitter-airline-sentiment) (CC BY-NC-SA 4.0) and the [Arabic review data](https://github.com/hadyelsahar/large-arabic-sentiment-analysis-resouces) from ElSahar and El-Beltagy (2015).
 
 ## Development
