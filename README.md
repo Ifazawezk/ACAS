@@ -163,7 +163,8 @@ When `ENVIRONMENT` is production, the app won't start unless `JWT_SECRET_KEY` ha
 - A token works until it expires. Logging out only removes it from the browser.
 - Tokens are kept in the browser's `localStorage`, where a script running on the page could read them. The dashboards escape comment text for this reason.
 - API keys saved through `/admin/api-configs` are stored as plain text, and analysis doesn't use them yet. It reads `OPENAI_API_KEY`.
-- There is no working audit log. Nothing writes to the activity log, and the routes under `/admin/activity-log` return 500. Saving or reading a template under `/admin/templates` also returns 500, and so does `GET /comments/favorites/list`.
+- The activity log at `/admin/activity-log` records who changed tickets, templates and admin settings, and bulk actions on comments. It doesn't record logins or new comments, and an admin can delete old entries, though that is logged too.
+- Templates live under `/admin`, so only admins can use them. Favorites can be saved and listed through the API, but the dashboard has no screen for them.
 - CSV export leaves a copy of the comments in `/tmp`, and the link it returns doesn't work.
 - `docker-compose.yml` is for development. It uses a fixed Postgres password and publishes port 5432.
 

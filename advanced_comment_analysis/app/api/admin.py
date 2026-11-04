@@ -8,6 +8,8 @@ from app.models.routing_rule import RoutingRule
 from app.models.sentic_mapping import SenticMapping
 from app.models.setting import Setting
 from app.models.api_config import APIConfig
+from app.services.activity_service import record
+from app.utils.roles import get_current_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -19,23 +21,26 @@ def list_rules(db: Session = Depends(get_db)):
 
 
 @router.post('/rules')
-def create_rule(payload: dict, db: Session = Depends(get_db)):
+def create_rule(payload: dict, db: Session = Depends(get_db), user = Depends(get_current_user)):
     pattern = payload.get('pattern')
     priority = payload.get('priority', 'Low')
     if not pattern:
         raise HTTPException(status_code=400, detail='pattern required')
     r = RoutingRule(pattern=pattern, priority=priority, enabled=payload.get('enabled', True))
     db.add(r)
+    db.flush()
+    record(db, user, "create", "rule", r.id, pattern)
     db.commit()
     db.refresh(r)
     return {"id": r.id, "pattern": r.pattern, "priority": r.priority, "enabled": r.enabled}
 
 
 @router.delete('/rules/{rule_id}')
-def delete_rule(rule_id: int, db: Session = Depends(get_db)):
+def delete_rule(rule_id: int, db: Session = Depends(get_db), user = Depends(get_current_user)):
     r = db.query(RoutingRule).filter(RoutingRule.id == rule_id).first()
     if not r:
         raise HTTPException(status_code=404, detail='not found')
+    record(db, user, "delete", "rule", rule_id, r.pattern)
     db.delete(r)
     db.commit()
     return {"ok": True}
@@ -48,23 +53,26 @@ def list_sentics(db: Session = Depends(get_db)):
 
 
 @router.post('/sentics')
-def create_sentics(payload: dict, db: Session = Depends(get_db)):
+def create_sentics(payload: dict, db: Session = Depends(get_db), user = Depends(get_current_user)):
     emotion = payload.get('emotion')
     priority = payload.get('priority', 'Low')
     if not emotion:
         raise HTTPException(status_code=400, detail='emotion required')
     m = SenticMapping(emotion=emotion, priority=priority)
     db.add(m)
+    db.flush()
+    record(db, user, "create", "sentic", m.id, f"{emotion} -> {priority}")
     db.commit()
     db.refresh(m)
     return {"id": m.id, "emotion": m.emotion, "priority": m.priority}
 
 
 @router.delete('/sentics/{mid}')
-def delete_sentics(mid: int, db: Session = Depends(get_db)):
+def delete_sentics(mid: int, db: Session = Depends(get_db), user = Depends(get_current_user)):
     m = db.query(SenticMapping).filter(SenticMapping.id == mid).first()
     if not m:
         raise HTTPException(status_code=404, detail='not found')
+    record(db, user, "delete", "sentic", mid, m.emotion)
     db.delete(m)
     db.commit()
     return {"ok": True}
@@ -78,7 +86,7 @@ def get_config(db: Session = Depends(get_db)):
 
 
 @router.post('/config')
-def set_config(payload: dict, db: Session = Depends(get_db)):
+def set_config(payload: dict, db: Session = Depends(get_db), user = Depends(get_current_user)):
     # payload is key/value map
     for k, v in payload.items():
         row = db.query(Setting).filter(Setting.key == k).first()
@@ -87,6 +95,7 @@ def set_config(payload: dict, db: Session = Depends(get_db)):
         else:
             row = Setting(key=k, value=v)
             db.add(row)
+    record(db, user, "update", "config", details=", ".join(sorted(payload)))
     db.commit()
     return {"ok": True}
 
@@ -101,7 +110,7 @@ def list_api_configs(db: Session = Depends(get_db)):
 
 
 @router.post('/api-configs')
-def create_api_config(payload: dict, db: Session = Depends(get_db)):
+def create_api_config(payload: dict, db: Session = Depends(get_db), user = Depends(get_current_user)):
     """Add a new API configuration"""
     logger = logging.getLogger(__name__)
     
@@ -127,6 +136,8 @@ def create_api_config(payload: dict, db: Session = Depends(get_db)):
     )
     
     db.add(config)
+    db.flush()
+    record(db, user, "create", "api_config", config.id, name)
     db.commit()
     db.refresh(config)
     
@@ -135,7 +146,7 @@ def create_api_config(payload: dict, db: Session = Depends(get_db)):
 
 
 @router.put('/api-configs/{config_id}')
-def update_api_config(config_id: int, payload: dict, db: Session = Depends(get_db)):
+def update_api_config(config_id: int, payload: dict, db: Session = Depends(get_db), user = Depends(get_current_user)):
     """Update an existing API configuration"""
     config = db.query(APIConfig).filter(APIConfig.id == config_id).first()
     if not config:
@@ -155,18 +166,20 @@ def update_api_config(config_id: int, payload: dict, db: Session = Depends(get_d
     if 'provider' in payload:
         config.provider = payload['provider'].strip()
     
+    record(db, user, "update", "api_config", config_id, config.name)
     db.commit()
     db.refresh(config)
     return config.to_dict(include_key=False)
 
 
 @router.delete('/api-configs/{config_id}')
-def delete_api_config(config_id: int, db: Session = Depends(get_db)):
+def delete_api_config(config_id: int, db: Session = Depends(get_db), user = Depends(get_current_user)):
     """Delete an API configuration"""
     config = db.query(APIConfig).filter(APIConfig.id == config_id).first()
     if not config:
         raise HTTPException(status_code=404, detail='API config not found')
     
+    record(db, user, "delete", "api_config", config_id, config.name)
     db.delete(config)
     db.commit()
     return {"ok": True}

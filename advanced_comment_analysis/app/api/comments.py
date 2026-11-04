@@ -16,6 +16,7 @@ from app.services.ai_service import analyze_text
 from app.services.comment_ticket_service import save_comment_and_analysis
 from app.services import csv_service
 from app.models.activity_log import ActivityLog, Favorite
+from app.services.activity_service import record
 from app.utils.roles import get_current_user
 
 router = APIRouter(prefix="/comments", tags=["comments"])
@@ -154,7 +155,8 @@ def bulk_action(
     action: str = Query(..., regex="^(tag|assign_priority|create_tickets|delete)$"),
     comment_ids: List[int] = Query(...),
     priority: str = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
 ):
     """Perform bulk actions on multiple comments.
     
@@ -208,7 +210,9 @@ def bulk_action(
             db.delete(comment)
             count += 1
         db.commit()
-    
+
+    record(db, user, "bulk", "comment", details=f"{action} on {count} comments")
+    db.commit()
     return {"status": "success", "action": action, "affected_count": count}
 
 
@@ -288,7 +292,14 @@ def get_favorites(db: Session = Depends(get_db), user = Depends(get_current_user
     """Get user's favorite comments."""
     from app.models.comment import Comment
     
-    favorites = db.query(Comment).join(Favorite).filter(Favorite.user_id == user.id).all()
+    # Favorite has no foreign key to Comment, so the join needs its condition spelled out.
+    favorites = (
+        db.query(Comment)
+        .join(Favorite, Favorite.comment_id == Comment.id)
+        .filter(Favorite.user_id == user.id)
+        .order_by(Favorite.created_at.desc())
+        .all()
+    )
     return [serialize_comment(c) for c in favorites]
 
 
