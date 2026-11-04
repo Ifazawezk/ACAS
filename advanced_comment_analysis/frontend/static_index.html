@@ -1112,7 +1112,11 @@
                 if (intent) url += `&intent=${intent}`;
                 
                 const result = await api(url);
-                const link = `${API}${result.url}`;
+                // The file needs the login token too, so fetch it and save it from memory.
+                const token = localStorage.getItem('auth_token');
+                const res = await fetch(`${API}${result.url}`, {headers: {'Authorization': `Bearer ${token}`}});
+                if (!res.ok) throw new Error(`${res.status}`);
+                const link = URL.createObjectURL(await res.blob());
                 
                 const a = document.createElement('a');
                 a.href = link;
@@ -1120,6 +1124,7 @@
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
+                URL.revokeObjectURL(link);
                 
                 alert(`✅ Exported ${result.count} comments`);
             } catch (e) {
