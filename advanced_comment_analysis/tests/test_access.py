@@ -17,6 +17,7 @@ NON_API_ROUTES = {"/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc", "
 ADMIN_OUTSIDE_THE_ADMIN_PATHS = {
     ("POST", "/comments/bulk-action"),
     ("GET", "/comments/export/download"),
+    ("GET", "/comments/export/files/{filename}"),
     ("GET", "/comments/activity/log"),
 }
 
@@ -78,9 +79,7 @@ def test_every_admin_route_refuses_a_normal_user(anon, user_headers):
 
 
 def test_an_admin_is_let_through_on_every_route(anon, admin_headers):
-    # The export route writes a file to /tmp, so it is left out to keep test runs clean.
-    skip = PUBLIC_ROUTES | {("GET", "/comments/export/download")}
-    routes = [route for route in every_api_route() if route not in skip]
+    routes = [route for route in every_api_route() if route not in PUBLIC_ROUTES]
     refused = {route: status for route, status in statuses(anon, routes, admin_headers).items() if status in (401, 403)}
     assert refused == {}
 

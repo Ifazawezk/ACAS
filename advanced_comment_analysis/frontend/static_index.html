@@ -1112,7 +1112,11 @@
                 if (intent) url += `&intent=${intent}`;
                 
                 const result = await api(url);
-                const link = `${API}${result.url}`;
+                // The file needs the login token too, so fetch it and save it from memory.
+                const token = localStorage.getItem('auth_token');
+                const res = await fetch(`${API}${result.url}`, {headers: {'Authorization': `Bearer ${token}`}});
+                if (!res.ok) throw new Error(`${res.status}`);
+                const link = URL.createObjectURL(await res.blob());
                 
                 const a = document.createElement('a');
                 a.href = link;
@@ -1120,6 +1124,7 @@
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
+                URL.revokeObjectURL(link);
                 
                 alert(`✅ Exported ${result.count} comments`);
             } catch (e) {
@@ -2332,24 +2337,25 @@
             }
             
             container.innerHTML = logs.map(log => {
-                const date = new Date(log.timestamp);
+                // created_at is UTC without a zone, so the Z keeps the browser from reading it as local time.
+                const date = new Date(log.created_at + 'Z');
                 const time = date.toLocaleTimeString();
                 const icons = {
                     'create': '✨', 'update': '✏️', 'delete': '🗑️',
                     'export': '📥', 'filter': '🔍', 'bulk': '⚡'
                 };
-                const icon = icons[log.action_type] || '•';
+                const icon = icons[log.action] || '•';
                 
                 return `
                     <div style="padding: 12px; border-left: 3px solid var(--accent); margin-bottom: 8px; background: var(--hover); border-radius: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <span style="font-size: 18px;">${icon}</span>
-                                <span style="font-weight: 600; margin-left: 8px;">${escapeHtml(log.action_type)}</span>
+                                <span style="font-weight: 600; margin-left: 8px;">${escapeHtml(log.action + ' ' + log.resource_type)}</span>
                             </div>
                             <span style="font-size: 12px; color: var(--muted);">${time}</span>
                         </div>
-                        <div style="font-size: 13px; margin-top: 4px; color: var(--muted);">${escapeHtml(log.description || log.resource_type)}</div>
+                        <div style="font-size: 13px; margin-top: 4px; color: var(--muted);">${escapeHtml(log.details || '')}</div>
                     </div>
                 `;
             }).join('');

@@ -5,6 +5,8 @@ from typing import List, Optional
 from app.database.session import get_db
 from app.models.ticket import Ticket, TicketStatus
 from app.schemas.ticket import TicketRead, TicketCreate
+from app.services.activity_service import record
+from app.utils.roles import get_current_user
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -18,7 +20,7 @@ def list_tickets(status: Optional[TicketStatus] = None, limit: int = 100, db: Se
 
 
 @router.post("/", response_model=TicketRead)
-def create_ticket(payload: TicketCreate, db: Session = Depends(get_db)):
+def create_ticket(payload: TicketCreate, db: Session = Depends(get_db), user = Depends(get_current_user)):
     """Create a new ticket from a comment"""
     # Verify comment exists
     from app.models.comment import Comment
@@ -41,17 +43,20 @@ def create_ticket(payload: TicketCreate, db: Session = Depends(get_db)):
         assigned_to=payload.assigned_to
     )
     db.add(ticket)
+    db.flush()
+    record(db, user, "create", "ticket", ticket.id, payload.title)
     db.commit()
     db.refresh(ticket)
     return ticket
 
 
 @router.post("/{ticket_id}/close", response_model=TicketRead)
-def close_ticket(ticket_id: int, db: Session = Depends(get_db)):
+def close_ticket(ticket_id: int, db: Session = Depends(get_db), user = Depends(get_current_user)):
     ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     ticket.status = TicketStatus.closed
+    record(db, user, "update", "ticket", ticket.id, "Closed")
     db.commit()
     db.refresh(ticket)
     return ticket

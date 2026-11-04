@@ -101,6 +101,7 @@ Settings are read from `advanced_comment_analysis/.env`. [`.env.example`](advanc
 | `JWT_EXPIRE_MINUTES`      | `60`                   | How long a login token stays valid |
 | `SCRAPE_ALLOWED_HOSTS`    | empty                  | Host names the URL scraper may fetch even if they are private, separated by commas |
 | `ACAS_ADMIN_PASSWORD`     | empty                  | Password for `tools/create_admin.py` when it runs from a script |
+| `EXPORT_DIR`              | `data/exports`         | Where exports are saved. A relative path counts from `advanced_comment_analysis`, and each account gets its own subfolder |
 
 Every analysis result has an `analyzer` field, either `openai` or `local`. If the API can't be reached, ACAS falls back to the local analyzer and logs why, so a bad key or an outage shows up as `local`.
 
@@ -121,7 +122,8 @@ Every endpoint needs `Authorization: Bearer <token>` except `POST /auth/register
 | `GET` / `POST` | `/comments/` | Login | List / add comments |
 | `POST` | `/comments/upload` | Login | CSV batch import |
 | `POST` | `/comments/bulk-action` | Admin | Bulk update or delete comments |
-| `GET`  | `/comments/export/download` | Admin | Export comments |
+| `GET`  | `/comments/export/download` | Admin | Export comments as CSV or JSON, returns a link to the file |
+| `GET`  | `/comments/export/files/{name}` | Admin | Download an export. Each admin only sees their own |
 | `GET` / `POST` | `/tickets/` | Login | List / create tickets |
 | `POST` | `/tickets/{id}/close` | Login | Close a ticket |
 | `GET`  | `/dashboard/metrics` | Login | KPIs for the dashboard |
@@ -163,8 +165,9 @@ When `ENVIRONMENT` is production, the app won't start unless `JWT_SECRET_KEY` ha
 - A token works until it expires. Logging out only removes it from the browser.
 - Tokens are kept in the browser's `localStorage`, where a script running on the page could read them. The dashboards escape comment text for this reason.
 - API keys saved through `/admin/api-configs` are stored as plain text, and analysis doesn't use them yet. It reads `OPENAI_API_KEY`.
-- There is no working audit log. Nothing writes to the activity log, and the routes under `/admin/activity-log` return 500. Saving or reading a template under `/admin/templates` also returns 500, and so does `GET /comments/favorites/list`.
-- CSV export leaves a copy of the comments in `/tmp`, and the link it returns doesn't work.
+- The activity log at `/admin/activity-log` records who changed tickets, templates and admin settings, bulk actions on comments, and exports. It doesn't record logins or new comments, and an admin can delete old entries, though that is logged too.
+- Templates live under `/admin`, so only admins can use them. Favorites can be saved and listed through the API, but the dashboard has no screen for them.
+- Exports stay in `data/exports` until someone deletes them. They hold the exported comments, so protect that folder like the database.
 - `docker-compose.yml` is for development. It uses a fixed Postgres password and publishes port 5432.
 
 ## Offline analyzer accuracy
@@ -193,6 +196,8 @@ To run it yourself (this downloads about 7 MB into `data/eval`, which git ignore
 ```powershell
 .\.venv\Scripts\python tools\evaluate_analyzer.py --split test
 ```
+
+Each run also writes one row per comment to `data/eval/cases-test.csv` (or `cases-dev.csv`): the dataset, an id made from the text, the gold and predicted label, and whether a ticket should have opened and did. The ids don't change between runs, so two versions of the analyzer can be compared comment by comment, with McNemar's test for example.
 
 The data isn't stored here because of its licences: [Twitter US Airline Sentiment](https://huggingface.co/datasets/osanseviero/twitter-airline-sentiment) (CC BY-NC-SA 4.0) and the [Arabic review data](https://github.com/hadyelsahar/large-arabic-sentiment-analysis-resouces) from ElSahar and El-Beltagy (2015).
 

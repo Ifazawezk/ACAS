@@ -148,7 +148,7 @@ advanced_comment_analysis/
 ├── tools/
 │   ├── seed_users.py         # Create default user accounts
 │   ├── seed_demo_db.py       # Load sample data
-│   ├── endpoint_test.py      # API testing
+│   ├── verify_system.py      # System checks
 │   └── ...
 ├── tests/
 │   ├── test_ai_service.py    # Service tests
@@ -356,7 +356,7 @@ pytest tests/test_ai_service.py -v
 
 ### Test Endpoints
 ```bash
-python tools/endpoint_test.py
+python tools/verify_system.py
 python tools/smoke_test.py
 ```
 

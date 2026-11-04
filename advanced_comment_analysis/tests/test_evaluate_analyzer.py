@@ -1,4 +1,5 @@
 """The evaluation has to be right before its numbers mean anything."""
+import csv
 import importlib.util
 from pathlib import Path
 
@@ -57,3 +58,46 @@ def test_mistakes_of_the_test_half_cannot_be_printed(monkeypatch):
     monkeypatch.setattr("sys.argv", ["evaluate_analyzer.py", "--split", "test", "--errors", "5"])
     with pytest.raises(SystemExit, match="spoil"):
         evaluate.main()
+
+
+def run_on_tiny_data(monkeypatch, argv, results):
+    rows = [("I hate it", "negative"), ("Lovely", "positive"), ("ok", "neutral")]
+    monkeypatch.setattr(evaluate, "DATASETS", {"tiny": {}})
+    monkeypatch.setattr(evaluate, "load", lambda name, split: rows)
+    monkeypatch.setattr(evaluate, "analyze", lambda text: results[text])
+    monkeypatch.setattr("sys.argv", ["evaluate_analyzer.py", *argv])
+    evaluate.main()
+
+
+def read_cases(path):
+    with open(path, encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def test_each_comment_is_saved_so_two_runs_can_be_paired(monkeypatch, tmp_path):
+    first, second = tmp_path / "first.csv", tmp_path / "second.csv"
+    run_on_tiny_data(monkeypatch, ["--cases", str(first)], {
+        "I hate it": ("negative", True, 0.9), "Lovely": ("negative", True, 0.6), "ok": ("neutral", False, 0.5),
+    })
+    run_on_tiny_data(monkeypatch, ["--cases", str(second)], {
+        "I hate it": ("negative", False, 0.9), "Lovely": ("positive", False, 0.9), "ok": ("neutral", False, 0.5),
+    })
+
+    cases = read_cases(first)
+    assert [(c["dataset"], c["gold"], c["predicted"], c["ticket_gold"], c["ticket_predicted"]) for c in cases] == [
+        ("tiny", "negative", "negative", "1", "1"),
+        ("tiny", "positive", "negative", "0", "1"),
+        ("tiny", "neutral", "neutral", "0", "0"),
+    ]
+    ids = [c["id"] for c in cases]
+    assert len(set(ids)) == 3
+    assert [c["id"] for c in read_cases(second)] == ids
+    assert [c["predicted"] for c in read_cases(second)] == ["negative", "positive", "neutral"]
+
+
+def test_cases_go_to_the_ignored_data_folder_by_default(monkeypatch, tmp_path):
+    monkeypatch.setattr(evaluate, "DATA_DIR", tmp_path)
+    run_on_tiny_data(monkeypatch, ["--split", "test"], {
+        "I hate it": ("negative", True, 0.9), "Lovely": ("positive", False, 0.9), "ok": ("neutral", False, 0.5),
+    })
+    assert len(read_cases(tmp_path / "cases-test.csv")) == 3

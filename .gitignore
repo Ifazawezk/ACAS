@@ -39,3 +39,6 @@ Thumbs.db
 
 # Evaluation data, downloaded on demand and not ours to redistribute
 **/data/eval/
+
+# Exported comments
+**/data/exports/

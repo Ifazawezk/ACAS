@@ -14,6 +14,7 @@ os.environ["FORCE_LOCAL"] = "true"
 os.environ["OPENAI_API_KEY"] = ""
 os.environ["ENVIRONMENT"] = "test"
 os.environ.pop("SCRAPE_ALLOWED_HOSTS", None)
+os.environ["EXPORT_DIR"] = tempfile.mkdtemp(prefix="acas-exports-")
 
 
 @pytest.fixture()
@@ -47,21 +48,30 @@ def user_headers(anon, register):
 
 
 @pytest.fixture()
-def admin_headers(anon):
+def make_admin(anon):
     """Written straight to the database, because no public route can create an admin."""
-    from app.database.session import SessionLocal
-    from app.models.user import User, UserRole
-    from app.utils.security import create_access_token, hash_password
 
-    db = SessionLocal()
-    try:
-        admin = User(
-            username=f"admin_{uuid4().hex[:10]}",
-            hashed_password=hash_password("a-test-password"),
-            role=UserRole.admin,
-        )
-        db.add(admin)
-        db.commit()
-        return {"Authorization": f"Bearer {create_access_token({'sub': str(admin.id)})}"}
-    finally:
-        db.close()
+    def _make_admin():
+        from app.database.session import SessionLocal
+        from app.models.user import User, UserRole
+        from app.utils.security import create_access_token, hash_password
+
+        db = SessionLocal()
+        try:
+            admin = User(
+                username=f"admin_{uuid4().hex[:10]}",
+                hashed_password=hash_password("a-test-password"),
+                role=UserRole.admin,
+            )
+            db.add(admin)
+            db.commit()
+            return {"Authorization": f"Bearer {create_access_token({'sub': str(admin.id)})}"}
+        finally:
+            db.close()
+
+    return _make_admin
+
+
+@pytest.fixture()
+def admin_headers(make_admin):
+    return make_admin()

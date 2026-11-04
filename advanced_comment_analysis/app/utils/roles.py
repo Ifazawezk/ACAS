@@ -24,6 +24,7 @@ PUBLIC_ROUTES = {
 ADMIN_ROUTES = {
     ("POST", "/comments/bulk-action"),
     ("GET", "/comments/export/download"),
+    ("GET", "/comments/export/files/{filename}"),
     ("GET", "/comments/activity/log"),
 }
 
