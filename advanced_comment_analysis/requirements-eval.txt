@@ -1,0 +1,4 @@
+# Tools for comparing analyzer versions and checking the evaluation data.
+# The app and the tests don't need them.
+qatar-abtest @ git+https://github.com/Ifazawezk/qatar-abtest@be4baeb8e91832821c48e297e69a70eb5d8c3cfc
+qatar-data-checks @ git+https://github.com/Ifazawezk/qatar-data-checks@1736f845d9cadac8d7c569625d28e3c83a005f7a

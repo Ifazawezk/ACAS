@@ -199,6 +199,39 @@ To run it yourself (this downloads about 7 MB into `data/eval`, which git ignore
 
 Each run also writes one row per comment to `data/eval/cases-test.csv` (or `cases-dev.csv`): the dataset, an id made from the text, the gold and predicted label, and whether a ticket should have opened and did. The ids don't change between runs, so two versions of the analyzer can be compared comment by comment, with McNemar's test for example.
 
+`tools/compare_analyzers.py` does that for the original analyzer and the current one. It checks out the last commit before the rewrite (dcfde55) in a temporary git worktree, runs today's evaluator there on the same files in `data/eval`, removes the worktree, and compares the two with `qabtest compare` from [qatar-abtest](https://github.com/Ifazawezk/qatar-abtest):
+
+```powershell
+.\.venv\Scripts\pip install -r requirements-eval.txt
+.\.venv\Scripts\python tools\compare_analyzers.py
+```
+
+A ticket decision is right when a comment labelled negative gets a ticket or any other comment doesn't. McNemar's test only looks at the comments that one version gets right and the other gets wrong. The interval is a 95% paired bootstrap over comments.
+
+| Held-out comments | Right only before | Right only now | Change (95% interval) | McNemar p |
+|---|---|---|---|---|
+| English airline tweets, sentiment | 1,730 | 1,428 | -4.2 points (-5.8 to -2.7) | 8.5e-8 |
+| English airline tweets, ticket decision | 1,403 | 1,958 | +7.8 points (+6.2 to +9.3) | 1.2e-21 |
+| Arabic product reviews, sentiment | 233 | 1,133 | +43.4 points (+40.4 to +46.3) | 1.1e-130 |
+| Arabic product reviews, ticket decision | 194 | 1,482 | +62.1 points (+59.3 to +64.9) | 6.3e-217 |
+| Arabic restaurant reviews, sentiment | 531 | 2,230 | +40.9 points (+38.7 to +42.9) | 4.3e-229 |
+| Arabic restaurant reviews, ticket decision | 419 | 2,325 | +45.8 points (+43.8 to +47.8) | 1.4e-289 |
+
+None of these could be chance, and that includes the drop in English accuracy. On the tweets the current analyzer gets 302 fewer labels right but 555 more ticket decisions, since it no longer opens a ticket for nearly everything. qabtest prints p-values this small as <0.0001.
+
+The data has problems of its own. The check files in `data/checks` find them with `qdc` from [qatar-data-checks](https://github.com/Ifazawezk/qatar-data-checks):
+
+```powershell
+.\.venv\Scripts\qdc run data\eval\arabic-prod\PROD.csv -c data\checks\arabic_reviews.yaml
+.\.venv\Scripts\qdc run data\eval\airline\Tweets.csv -c data\checks\airline_tweets.yaml
+```
+
+- 293 of the 4,272 Arabic product reviews contain no Arabic letters, and 5 more have no letters at all. Nearly all are short English reviews like "i like it", with labels from the same star ratings. The restaurant reviews have 46 of these. People write to Arabic businesses in English too, so the evaluator keeps them, and the check only warns.
+- Some texts appear more than once with different labels: 25 tweets and 1 restaurant review, 18 comments in the test half. The evaluator keeps one copy of each text with the first label it meets, so these have no right answer and should be left out. The check fails on them.
+- 155 tweet ids appear twice. Both rows always have the same text, so the evaluator already counts each tweet once. 18 of these pairs disagree on the label and are among the texts above.
+
+Leaving out comments would change the figures in the first table, so for now the evaluator and the table stay as they are. Without the 18 comments that have two labels, the original analyzer's accuracy and ticket precision on tweets go up by 0.2 points (65.0% to 65.2%, 65.9% to 66.1%), and nothing else moves by more than 0.1. Without the reviews that have no Arabic letters as well, accuracy on product reviews is 20.4% before and 67.7% now (instead of 22.6% and 66.0%), and on restaurant reviews 29.0% and 70.1% (instead of 29.0% and 69.9%). `tools\compare_analyzers.py --data-issues` prints every figure both ways.
+
 The data isn't stored here because of its licences: [Twitter US Airline Sentiment](https://huggingface.co/datasets/osanseviero/twitter-airline-sentiment) (CC BY-NC-SA 4.0) and the [Arabic review data](https://github.com/hadyelsahar/large-arabic-sentiment-analysis-resouces) from ElSahar and El-Beltagy (2015).
 
 ## Development

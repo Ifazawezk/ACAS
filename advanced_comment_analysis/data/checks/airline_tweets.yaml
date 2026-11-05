@@ -1,0 +1,19 @@
+# Checks for the English airline tweets in data/eval/airline/Tweets.csv, downloaded by
+# tools/evaluate_analyzer.py. Run with qatar-data-checks:
+#   qdc run data/eval/airline/Tweets.csv -c data/checks/airline_tweets.yaml
+# Every repeated tweet_id repeats the same text, and the evaluator keeps one copy of each
+# text, so repeated ids are a warning. A text with two labels has no right answer.
+dataset: ACAS airline tweets
+columns:
+  tweet_id:
+    - not_null
+    - unique: {severity: warn}
+  text:
+    - not_null
+    - unique: {name: duplicate comments, severity: warn}
+    - script: {expect: latin, min_share: 0.5}
+  airline_sentiment:
+    - allowed: [negative, neutral, positive]
+    - one_value_per: {key: text, name: one label per comment}
+  airline_sentiment_confidence:
+    - range: {min: 0, max: 1}

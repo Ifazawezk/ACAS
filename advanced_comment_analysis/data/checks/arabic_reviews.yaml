@@ -1,0 +1,17 @@
+# Checks for the labelled Arabic reviews in data/eval (arabic-prod/PROD.csv and arabic-res/RES1.csv),
+# downloaded by tools/evaluate_analyzer.py. Run with qatar-data-checks:
+#   qdc run data/eval/arabic-prod/PROD.csv -c data/checks/arabic_reviews.yaml
+# Reviews written in English are real reviews and the evaluator keeps them, so the script
+# check is a warning. A text with two labels has no right answer, so that one stays an error.
+dataset: ACAS Arabic reviews
+columns:
+  text:
+    - not_null
+    - unique: {name: duplicate comments, severity: warn}
+    - unique: {normalize: true, name: duplicates after normalising, severity: warn}
+    - script: {expect: arabic, min_share: 0.5, severity: warn}
+    - arabic_text: {severity: warn}
+  polarity:
+    - not_null
+    - allowed: [-1, 0, 1]
+    - one_value_per: {key: text, name: one label per comment}
